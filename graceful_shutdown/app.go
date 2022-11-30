@@ -149,6 +149,7 @@ func (app *App) shutdown() {
 }
 
 func (app *App) close() {
+	// 释放应用可能的一些资源
 	time.Sleep(time.Second)
 	log.Print("应用关闭")
 }
