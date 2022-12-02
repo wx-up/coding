@@ -22,6 +22,7 @@ func (m *memoryCache) Get(key string) (string, error) {
 }
 
 // SafeCache 对已有功能进行增强（ 接口不会改变 ）
+// 装饰器模式
 type SafeCache struct {
 	Cache
 	lock sync.RWMutex

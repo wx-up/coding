@@ -1,5 +1,6 @@
 package option
 
+// Option 选项模式，一般针对可选参数
 type Option func(*User)
 
 func WithName(name string) Option {

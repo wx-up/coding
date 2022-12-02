@@ -1,5 +1,6 @@
 package builder
 
+// UserBuilder 建造者模式，一般是基于链式调用
 type UserBuilder struct {
 	name string
 }
