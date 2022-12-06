@@ -17,26 +17,26 @@ type Dst struct {
 }
 
 func TestCopyBuilder_Builder(t *testing.T) {
-	type fields struct {
+	type args struct {
 		src          any
 		dst          any
 		ignoreFields []string
 	}
 	tests := []struct {
 		name    string
-		fields  fields
+		args    args
 		wantErr error
 	}{
 		{
 			name: "src nil",
-			fields: fields{
+			args: args{
 				src: nil,
 			},
 			wantErr: errors.New("src 不能为 nil"),
 		},
 		{
 			name: "dst nil",
-			fields: fields{
+			args: args{
 				src: &Src{},
 				dst: nil,
 			},
@@ -44,7 +44,7 @@ func TestCopyBuilder_Builder(t *testing.T) {
 		},
 		{
 			name: "src type invalid",
-			fields: fields{
+			args: args{
 				src: Src{},
 				dst: Dst{},
 			},
@@ -52,7 +52,7 @@ func TestCopyBuilder_Builder(t *testing.T) {
 		},
 		{
 			name: "dst type invalid",
-			fields: fields{
+			args: args{
 				src: &Src{},
 				dst: Dst{},
 			},
@@ -60,7 +60,7 @@ func TestCopyBuilder_Builder(t *testing.T) {
 		},
 		{
 			name: "pass",
-			fields: fields{
+			args: args{
 				src: &Src{
 					Name: "wx",
 					Age:  16,
@@ -72,18 +72,13 @@ func TestCopyBuilder_Builder(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			co := &CopyBuilder{
-				src:          tt.fields.src,
-				dst:          tt.fields.dst,
-				ignoreFields: tt.fields.ignoreFields,
-			}
-			err := co.Builder()
+			err := Copy(tt.args.src, tt.args.dst, tt.args.ignoreFields)
 			assert.Equal(t, tt.wantErr, err)
 			if err != nil {
 				return
 			}
-			assert.Equal(t, tt.fields.src.(*Src).Age, tt.fields.dst.(*Dst).Age)
-			assert.Equal(t, tt.fields.src.(*Src).Name, tt.fields.dst.(*Dst).Name)
+			assert.Equal(t, tt.args.src.(*Src).Age, tt.args.dst.(*Dst).Age)
+			assert.Equal(t, tt.args.src.(*Src).Name, tt.args.dst.(*Dst).Name)
 		})
 	}
 }
