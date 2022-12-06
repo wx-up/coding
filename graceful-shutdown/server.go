@@ -31,7 +31,7 @@ func (s *Server) Handle(pattern string, handler http.HandlerFunc) {
 
 // rejectReq 拒绝请求
 func (s *Server) rejectReq() {
-	s.mux.reject = true
+	s.mux.reject.Store(true)
 }
 
 func (s *Server) Start() error {
