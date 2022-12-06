@@ -53,7 +53,7 @@ type App struct {
 	// 优雅退出等待已有请求处理的时间
 	waitTimeout time.Duration
 
-	// 回调超时时间
+	// 回调处理超时时间
 	cbTimeout time.Duration
 
 	// 回调
