@@ -11,6 +11,7 @@ type JsonColumn[T any] struct {
 	Val   T
 }
 
+// Value Go类型转成数据库类型的时候会调用Value方法
 func (j *JsonColumn[T]) Value() (driver.Value, error) {
 	if !j.Valid {
 		return nil, nil
@@ -18,6 +19,7 @@ func (j *JsonColumn[T]) Value() (driver.Value, error) {
 	return json.Marshal(j.Val)
 }
 
+// Scan 数据库类型转成Go类型会调用Scan方法
 func (j *JsonColumn[T]) Scan(src any) error {
 	if src == nil {
 		return errors.New("src 不能为 nil")

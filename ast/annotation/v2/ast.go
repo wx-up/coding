@@ -6,6 +6,11 @@ import (
 	astHelp "github.com/wx-up/coding/ast/annotation"
 )
 
+/*
+ AST 遍历基本上可以使用当前代码结构
+ 调用链路：EnterVisitor --> FileVisitor --> TypeVisitor --> FieldVisitor
+*/
+
 // EnterVisitor 入口 visitor
 type EnterVisitor struct {
 	file *FileVisitor
