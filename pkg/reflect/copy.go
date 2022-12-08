@@ -5,6 +5,9 @@ import (
 	"reflect"
 )
 
+// TODO：Field 性能比 FieldByName 高，因此可以提前解析元数据（ 字段的 index ），比如初始化的时候（ 耗时前置 ）这样子实际操作的时候性能就很高了
+
+// Copy src 和 dts 字段类型必须一致
 func Copy(src any, dst any, ignoreFields []string) error {
 	if src == nil {
 		return errors.New("src 不能为 nil")
@@ -43,7 +46,7 @@ func Copy(src any, dst any, ignoreFields []string) error {
 
 		// 找到则设置值
 		foundValue := dstVal.FieldByName(fieldName)
-		if foundValue.CanSet() {
+		if foundValue.CanSet() && foundValue.Kind() == fieldValue.Kind() {
 			foundValue.Set(fieldValue)
 		}
 	}

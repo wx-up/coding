@@ -2,21 +2,15 @@ package unsafe
 
 import (
 	"errors"
-	"reflect"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func Test(t *testing.T) {
-	u := struct {
-		Name string
-		Age  int64
-	}{
-		Name: "wx",
-		Age:  12,
-	}
-	reflect.ValueOf(&u).UnsafePointer()
+	fmt.Println(strings.SplitN("date ", " ", 2))
 }
 
 func TestAccessor_Field(t *testing.T) {

@@ -110,6 +110,8 @@ func (app *App) StartAndServe() {
 }
 
 func (app *App) shutdown() {
+	// 拒绝请求，等待现有的请求处理完毕，如果是 HTTP 服务，它的 Shutdown 方法就包含了这两步
+	// 如果是 RPC 服务的话，就需要自己处理这块
 	for _, s := range app.servers {
 		// 拒绝请求
 		s.rejectReq()
