@@ -30,6 +30,8 @@ func iterateFunc(val any) (map[string]*FuncInfo, error) {
 		// 参数构建
 		ps := make([]reflect.Value, 0, inNum)
 		// 方法的第一个参数是接收者
+		// 如果是 Type 得到的 Method  第一个参数是接收者
+		// 如果是 Value 得到的 Method 第一个参数就是正常的方法入参
 		ps = append(ps, reflect.ValueOf(val))
 		for j := 0; j < inNum; j++ {
 			info.In = append(info.In, method.Type.In(j))

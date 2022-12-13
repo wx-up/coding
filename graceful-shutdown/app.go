@@ -91,7 +91,10 @@ func (app *App) StartAndServe() {
 	}
 
 	// 监听退出
-	ch := make(chan os.Signal, 1)
+	// 因为需要接收 ch 信号两次，所以这里缓存区设置为 2
+	// 设置为 1 可能存在风险，比如迅速地按ctrl+c两次就有可能丢信号
+	// signal.Notify 函数的注释上说明：它不会阻塞向 channel 发送数据的操作（ 猜测当 channel 满了就丢弃信号 ）
+	ch := make(chan os.Signal, 2)
 	signal.Notify(ch, signals...)
 	<-ch
 	go func() {
