@@ -35,8 +35,7 @@ func (mb *MiddlewareBuilder) Build() v2.Middleware {
 			if ctx.MatchPath != "" {
 				route = ctx.MatchPath
 			}
-			ms := endTime.Sub(startTime) / time.Millisecond
-			summaryVec.WithLabelValues(route, ctx.Req.Method, strconv.Itoa(status)).Observe(float64(ms))
+			summaryVec.WithLabelValues(route, ctx.Req.Method, strconv.Itoa(status)).Observe(float64(endTime.Sub(startTime).Milliseconds()))
 			// go report(endTime.Sub(startTime), ctx, summaryVec)
 		}
 	}
