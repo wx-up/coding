@@ -6,6 +6,8 @@ import (
 )
 
 func TestGoTemplateEngin_Render(t *testing.T) {
+	// 测试数据可以放在当前目录 testdata（ 不存在就创建 ）
+	// gohtml 后缀的话 goland 可以解析 html，如果是 tpl 则不行
 	tpl, err := template.ParseGlob("testdata/tpls/*.gohtml")
 	if err != nil {
 		t.Fatal(err)

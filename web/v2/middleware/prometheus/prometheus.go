@@ -24,7 +24,7 @@ func (mb *MiddlewareBuilder) Build() v2.Middleware {
 		ConstLabels: mb.ConstLabels,
 		Help:        mb.Help,
 	}, []string{"pattern", "method", "status"})
-	prometheus.MustRegister(summaryVec)
+	prometheus.MustRegister(summaryVec) // 需要注册
 	return func(next v2.HandleFunc) v2.HandleFunc {
 		return func(ctx *v2.Context) {
 			startTime := time.Now()

@@ -3,7 +3,7 @@ package error
 import v2 "github.com/wx-up/coding/web/v2"
 
 type MiddlewareBuilder struct {
-	resp map[int][]byte
+	resp map[int][]byte // 错误码和错误信息的映射关系
 }
 
 func (mb *MiddlewareBuilder) RegisterError(code int, resp []byte) *MiddlewareBuilder {

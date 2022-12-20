@@ -89,6 +89,10 @@ func (s *Server) Get(path string, handler HandleFunc) {
 	s.AddRoute(http.MethodGet, path, handler)
 }
 
+func (s *Server) Post(path string, handler HandleFunc) {
+	s.add(http.MethodPost, path, handler)
+}
+
 func (s *Server) AddRoute(method string, path string, handler HandleFunc) {
 	s.add(method, path, handler)
 }
