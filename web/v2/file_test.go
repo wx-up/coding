@@ -2,6 +2,7 @@ package v2
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"mime/multipart"
 	"path"
@@ -42,6 +43,16 @@ func TestFileUploader_Handle(t *testing.T) {
 		DstPathFunc: func(fh *multipart.FileHeader) string {
 			return path.Join("testdata", "upload", fh.Filename)
 		},
-	}).HandleFunc)
+	}).Handle())
 	s.Start(":8081")
+}
+
+func TestFileDownloader_Handle(t *testing.T) {
+	srv := NewServer()
+	srv.Get("download", (&FileDownloader{Dir: "./testdata"}).Handle())
+	srv.Start(":8081")
+}
+
+func TestFile(t *testing.T) {
+	fmt.Println()
 }
