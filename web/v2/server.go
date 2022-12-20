@@ -6,16 +6,31 @@ import (
 
 type HandleFunc func(ctx *Context)
 
-type Server struct {
-	route
+type (
+	Option func(s *Server)
+	Server struct {
+		route
 
-	ms []Middleware
+		ms []Middleware
+
+		tplEngine TemplateEngine
+	}
+)
+
+func WithTemplateEngine(engine TemplateEngine) Option {
+	return func(s *Server) {
+		s.tplEngine = engine
+	}
 }
 
-func NewServer() *Server {
-	return &Server{
+func NewServer(opts ...Option) *Server {
+	srv := &Server{
 		route: newRoute(),
 	}
+	for _, opt := range opts {
+		opt(srv)
+	}
+	return srv
 }
 
 func (s *Server) Use(ms ...Middleware) {
@@ -28,8 +43,9 @@ func (s *Server) Start(addr string) error {
 
 func (s *Server) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	ctx := &Context{
-		Req:  request,
-		Resp: writer,
+		Req:       request,
+		Resp:      writer,
+		tplEngine: s.tplEngine,
 	}
 
 	// 将路由的查找和业务的执行，包装成责任链中的最后一环

@@ -27,6 +27,9 @@ type Context struct {
 	// 解决方案：用户写入响应的时候，实际是写到内存，业务执行完成之后，再 flush
 	RespStatusCode int
 	RespData       []byte
+
+	// 模板引擎
+	tplEngine TemplateEngine
 }
 
 var ErrBodyNotJsonType = errors.New("body 不是 json 格式")
@@ -107,6 +110,17 @@ func (c *Context) PathValueV2(key string) StringValue {
 		return StringValue{err: errors.New("key 不存在")}
 	}
 	return StringValue{val: v}
+}
+
+func (c *Context) Render(name string, data any) error {
+	bs, err := c.tplEngine.Render(c.Req.Context(), name, data)
+	if err != nil {
+		c.RespStatusCode = http.StatusInternalServerError
+		return err
+	}
+	c.RespData = bs
+	c.RespStatusCode = http.StatusOK
+	return nil
 }
 
 type StringValue struct {
