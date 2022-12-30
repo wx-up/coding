@@ -1,11 +1,18 @@
 package v2
 
 import (
+	"errors"
+	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"github.com/hashicorp/golang-lru/v2"
 )
 
 // FileUploader 结构体内部定义各种参数
@@ -121,4 +128,158 @@ func (fd *FileDownloader) Handle() HandleFunc {
 		// 文件的打开、读取、返回给前端等操作委托给 http 包，不自己实现
 		http.ServeFile(ctx.Resp, ctx.Req, path)
 	}
+}
+
+// StaticResource 静态资源处理
+type StaticResource struct {
+	// 静态资源目录
+	dir string
+	// 文件名后缀对应 content-type
+	extensionContentTypeMap map[string]string
+
+	// 缓存
+	cache *lru.Cache[string, *fileCacheItem]
+
+	maxFileSize int // 单个文件的最大大小
+}
+
+type fileCacheItem struct {
+	fileName    string
+	fileSize    int
+	contentType string
+	data        []byte
+}
+
+type StaticResourceOption func(*StaticResource)
+
+// WithMoreExtension 更多 extension type
+func WithMoreExtension(extMap map[string]string) StaticResourceOption {
+	return func(resource *StaticResource) {
+		for k, v := range extMap {
+			resource.extensionContentTypeMap[k] = v
+		}
+	}
+}
+
+// WithFileCache 静态文件将会被缓存
+// maxFileSizeThreshold 超过这个大小的文件，就被认为是大文件，我们将不会缓存
+// maxCacheFileCnt 最多缓存多少个文件
+// 所以我们最多缓存 maxFileSizeThreshold * maxCacheFileCnt
+func WithFileCache(maxFileSizeThreshold int, maxCacheFileCnt int) StaticResourceOption {
+	return func(h *StaticResource) {
+		c, err := lru.New[string, *fileCacheItem](maxCacheFileCnt)
+		if err != nil {
+			log.Printf("创建缓存失败，将不会缓存静态资源")
+		}
+		h.maxFileSize = maxFileSizeThreshold
+		h.cache = c
+	}
+}
+
+func NewStaticResource(dir string, opts ...StaticResourceOption) *StaticResource {
+	handler := &StaticResource{
+		dir: dir,
+		extensionContentTypeMap: map[string]string{
+			"jpeg": "image/jpeg",
+			"jpe":  "image/jpeg",
+			"jpg":  "image/jpeg",
+			"png":  "image/png",
+			"pdf":  "image/pdf",
+		},
+	}
+	for _, opt := range opts {
+		opt(handler)
+	}
+	return handler
+}
+
+func (sr *StaticResource) Handle() HandleFunc {
+	return func(ctx *Context) {
+		// 获取请求路径上的文件名
+		// 路由：/img/:file
+		path, err := ctx.PathValue("file")
+		if err != nil {
+			ctx.RespData = []byte("文件不存在")
+			ctx.RespStatusCode = http.StatusNotFound
+			return
+		}
+
+		// 获取文件
+		cacheItem, err := sr.readFile(path)
+		if err != nil {
+			ctx.RespData = []byte("文件不存在")
+			ctx.RespStatusCode = http.StatusNotFound
+			return
+		}
+
+		// 缓存并返回结果
+		sr.cacheFile(cacheItem)
+		ctx.Resp.Header().Set("Content-Type", cacheItem.contentType)
+		ctx.Resp.Header().Set("Content-Length", fmt.Sprintf("%d", cacheItem.fileSize))
+		ctx.RespStatusCode = http.StatusOK
+		ctx.RespData = cacheItem.data
+	}
+}
+
+func (sr *StaticResource) readFile(path string) (*fileCacheItem, error) {
+	// 缓存中存在就直接返回
+	if item, ok := sr.readFileFromCache(path); ok {
+		return item, nil
+	}
+
+	// 判断是否是支持的文件类型
+	ext := getFileExt(path)
+	t, ok := sr.extensionContentTypeMap[ext]
+	if !ok {
+		return nil, errors.New("不支持的文件类型")
+	}
+
+	// 获取服务器上对应文件的地址
+	path = filepath.Join(sr.dir, path)
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	// 读取文件数据
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+	item := &fileCacheItem{
+		fileName:    path,
+		fileSize:    len(data),
+		contentType: t,
+		data:        data,
+	}
+	return item, nil
+}
+
+// cacheFile 缓存文件
+func (sr *StaticResource) cacheFile(item *fileCacheItem) {
+	if sr.cache == nil {
+		return
+	}
+
+	// 文件大小超过最大限制则不缓存
+	if item.fileSize > sr.maxFileSize {
+		return
+	}
+	sr.cache.Add(item.fileName, item)
+}
+
+// readFileFromCache 从缓存中获取
+func (sr *StaticResource) readFileFromCache(path string) (*fileCacheItem, bool) {
+	if sr.cache == nil {
+		return nil, false
+	}
+	return sr.cache.Get(path)
+}
+
+// getFileExt 获取文件的后缀
+func getFileExt(name string) string {
+	index := strings.LastIndex(name, ".")
+	if index == len(name)-1 {
+		return ""
+	}
+	return name[index+1:]
 }

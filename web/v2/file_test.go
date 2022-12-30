@@ -56,3 +56,11 @@ func TestFileDownloader_Handle(t *testing.T) {
 func TestFile(t *testing.T) {
 	fmt.Println()
 }
+
+func TestNewStaticResource(t *testing.T) {
+	s := NewServer()
+	handler := NewStaticResource("./testdata/img")
+	s.Get("/img/:file", handler.Handle())
+	// 在浏览器里面输入 localhost:8081/img/come_on_baby.jpg
+	s.Start(":8081")
+}
