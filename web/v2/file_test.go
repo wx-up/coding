@@ -60,7 +60,7 @@ func TestFile(t *testing.T) {
 func TestNewStaticResource(t *testing.T) {
 	s := NewServer()
 	handler := NewStaticResource("./testdata/img")
-	s.Get("/img/:file", handler.Handle())
+	s.Get("/img/:file", handler.Handler())
 	// 在浏览器里面输入 localhost:8081/img/come_on_baby.jpg
 	s.Start(":8081")
 }

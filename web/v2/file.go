@@ -164,7 +164,7 @@ func WithMoreExtension(extMap map[string]string) StaticResourceOption {
 // WithFileCache 静态文件将会被缓存
 // maxFileSizeThreshold 超过这个大小的文件，就被认为是大文件，我们将不会缓存
 // maxCacheFileCnt 最多缓存多少个文件
-// 所以我们最多缓存 maxFileSizeThreshold * maxCacheFileCnt
+// 所以我们最多缓存 maxFileSizeThreshold * maxCacheFileCnt（ 控制内存消耗，否则会增加内存的压力 ）
 func WithFileCache(maxFileSizeThreshold int, maxCacheFileCnt int) StaticResourceOption {
 	return func(h *StaticResource) {
 		c, err := lru.New[string, *fileCacheItem](maxCacheFileCnt)
@@ -193,7 +193,7 @@ func NewStaticResource(dir string, opts ...StaticResourceOption) *StaticResource
 	return handler
 }
 
-func (sr *StaticResource) Handle() HandleFunc {
+func (sr *StaticResource) Handler() HandleFunc {
 	return func(ctx *Context) {
 		// 获取请求路径上的文件名
 		// 路由：/img/:file
@@ -260,7 +260,7 @@ func (sr *StaticResource) cacheFile(item *fileCacheItem) {
 		return
 	}
 
-	// 文件大小超过最大限制则不缓存
+	// 文件大小超过最大限制，则不缓存
 	if item.fileSize > sr.maxFileSize {
 		return
 	}
