@@ -30,6 +30,19 @@ type Context struct {
 
 	// 模板引擎
 	tplEngine TemplateEngine
+
+	// 主要用于不同 middleware 直接传递数据，这里不做初始化，在使用的时候手动初始化
+	/*
+		注意：这里设计初始化为 nil，还是因为多数用户可能用不上。即便用得上，不同的人也需要不同的初始化容量。所以为了规避内存分配，
+		将这个 UserValues的初始化过程交给了用户。
+		我们当然可以初始化为一个固定容量的map,比如说 make(map[string]any,8)。但是这就相当于让多数用户为少数用户买单了一他们付出了内存和CPU,
+		结果自己用不上
+	*/
+
+	// 其次 middleware 之间的数据传递其实可以使用 req.Context 但是它总是会引起 http.Request 的拷贝
+	// 所以会有 UserValues 字段
+	// 其他框架也会有类似的结构，比如 Gin 的 Keys 字段
+	UserValues map[string]any
 }
 
 var ErrBodyNotJsonType = errors.New("body 不是 json 格式")
