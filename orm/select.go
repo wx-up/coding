@@ -2,10 +2,7 @@ package orm
 
 import (
 	"context"
-	"github.com/gertd/go-pluralize"
-	"github.com/iancoleman/strcase"
 	"github.com/wx-up/coding/orm/internal/errs"
-	"reflect"
 	"strings"
 )
 
@@ -21,10 +18,17 @@ type Selector[T any] struct {
 
 	// WHERE 条件
 	ps []Predicate
+
+	// 元数据
+	model *Model
+
+	db *DB
 }
 
-func NewSelector[T any]() *Selector[T] {
-	return &Selector[T]{}
+func NewSelector[T any](db *DB) *Selector[T] {
+	return &Selector[T]{
+		db: db,
+	}
 }
 
 func (s *Selector[T]) Where(ps ...Predicate) *Selector[T] {
@@ -46,14 +50,16 @@ func (s *Selector[T]) TableName() string {
 		return tblName
 	}
 	// 结构体名称的复数
-	var t T
-	typ := reflect.TypeOf(t)
-	tblName = strcase.ToSnake(pluralize.NewClient().Plural(typ.Name()))
-	return "`" + tblName + "`"
+	return "`" + s.model.tableName + "`"
 }
 
 func (s *Selector[T]) Build() (*Query, error) {
-
+	var err error
+	t := new(T)
+	s.model, err = s.db.r.parseModel(t)
+	if err != nil {
+		return nil, err
+	}
 	s.sb.WriteString("SELECT * FROM ")
 	s.sb.WriteString(s.TableName())
 
@@ -99,7 +105,14 @@ func (s *Selector[T]) buildExpression(expr expression) error {
 	switch v := expr.(type) {
 	case Column:
 		s.sb.WriteByte('`')
-		s.sb.WriteString(v.name)
+
+		// 检测用户传递的字段 ( C("Name") ) 是否合法
+		fd, ok := s.model.fieldMap[v.name]
+		if !ok {
+			return errs.NewErrUnknownField(v.name)
+		}
+
+		s.sb.WriteString(fd.colName)
 		s.sb.WriteByte('`')
 	case Val:
 		s.sb.WriteByte('?')

@@ -3,6 +3,7 @@ package orm
 import (
 	"database/sql"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -14,6 +15,8 @@ type TestModel struct {
 }
 
 func TestSelect_Build(t *testing.T) {
+	db, err := NewDB()
+	require.Nil(t, err)
 	tests := []struct {
 		name    string
 		builder QueryBuilder
@@ -22,7 +25,7 @@ func TestSelect_Build(t *testing.T) {
 	}{
 		{
 			name:    "from",
-			builder: NewSelector[TestModel]().From("test_model_tbl"),
+			builder: NewSelector[TestModel](db).From("test_model_tbl"),
 			want: &Query{
 				SQL: "SELECT * FROM test_model_tbl;",
 			},
@@ -30,7 +33,7 @@ func TestSelect_Build(t *testing.T) {
 		},
 		{
 			name:    "from with quotation mark", // 反引号
-			builder: NewSelector[TestModel]().From("`test_model_tbl`"),
+			builder: NewSelector[TestModel](db).From("`test_model_tbl`"),
 			want: &Query{
 				SQL: "SELECT * FROM `test_model_tbl`;",
 			},
@@ -38,7 +41,7 @@ func TestSelect_Build(t *testing.T) {
 		},
 		{
 			name:    "no from",
-			builder: NewSelector[TestModel](),
+			builder: NewSelector[TestModel](db),
 			want: &Query{
 				SQL: "SELECT * FROM `test_models`;",
 			},
@@ -46,7 +49,7 @@ func TestSelect_Build(t *testing.T) {
 		},
 		{
 			name:    "from but empty",
-			builder: NewSelector[TestModel]().From(""),
+			builder: NewSelector[TestModel](db).From(""),
 			want: &Query{
 				SQL: "SELECT * FROM `test_models`;",
 			},
@@ -54,7 +57,7 @@ func TestSelect_Build(t *testing.T) {
 		},
 		{
 			name:    "from with db",
-			builder: NewSelector[TestModel]().From("byn.test_model"),
+			builder: NewSelector[TestModel](db).From("byn.test_model"),
 			want: &Query{
 				SQL: "SELECT * FROM byn.test_model;",
 			},
@@ -62,7 +65,7 @@ func TestSelect_Build(t *testing.T) {
 		},
 		{
 			name:    "single predicate",
-			builder: NewSelector[TestModel]().Where(C("id").Eq(12)),
+			builder: NewSelector[TestModel](db).Where(C("Id").Eq(12)),
 			want: &Query{
 				SQL:  "SELECT * FROM `test_models` WHERE `id` = ?;",
 				Args: []any{12},
@@ -71,7 +74,7 @@ func TestSelect_Build(t *testing.T) {
 		},
 		{
 			name:    "and predicates",
-			builder: NewSelector[TestModel]().Where(C("age").Gt(12).And(C("age").Lt(24))),
+			builder: NewSelector[TestModel](db).Where(C("Age").Gt(12).And(C("Age").Lt(24))),
 			want: &Query{
 				SQL:  "SELECT * FROM `test_models` WHERE (`age` > ?) AND (`age` < ?);",
 				Args: []any{12, 24},
@@ -80,17 +83,17 @@ func TestSelect_Build(t *testing.T) {
 		},
 		{
 			name:    "or predicates",
-			builder: NewSelector[TestModel]().Where(C("name").Eq("bob").Or(C("age").Gt(12))),
+			builder: NewSelector[TestModel](db).Where(C("FirstName").Eq("bob").Or(C("Age").Gt(12))),
 			want: &Query{
-				SQL:  "SELECT * FROM `test_models` WHERE (`name` = ?) OR (`age` > ?);",
+				SQL:  "SELECT * FROM `test_models` WHERE (`first_name` = ?) OR (`age` > ?);",
 				Args: []any{"bob", 12},
 			},
 		},
 		{
 			name:    "not predicates",
-			builder: NewSelector[TestModel]().Where(C("name").Eq("bob").And(Not(C("age").Eq(12)))),
+			builder: NewSelector[TestModel](db).Where(C("FirstName").Eq("bob").And(Not(C("Age").Eq(12)))),
 			want: &Query{
-				SQL:  "SELECT * FROM `test_models` WHERE (`name` = ?) AND (NOT (`age` = ?));",
+				SQL:  "SELECT * FROM `test_models` WHERE (`first_name` = ?) AND (NOT (`age` = ?));",
 				Args: []any{"bob", 12},
 			},
 		},

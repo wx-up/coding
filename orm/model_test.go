@@ -98,7 +98,8 @@ func Test_parseModel(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseModel(tt.val)
+			r := &Registry{}
+			got, err := r.parseModel(tt.val)
 			assert.Equal(t, tt.wantErr, err)
 			if err != nil {
 				return

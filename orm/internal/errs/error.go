@@ -10,5 +10,10 @@ var (
 )
 
 func NewErrUnsupportedExpressionType(expr any) error {
+	// 错误信息加上 orm 前缀，标识错误的源头
 	return fmt.Errorf("orm: 不支持的表达式 %v", expr)
+}
+
+func NewErrUnknownField(name string) error {
+	return fmt.Errorf("orm: 未知字段 %s", name)
 }
