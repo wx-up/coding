@@ -1,11 +1,16 @@
 package orm
 
 import (
+	"database/sql"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 type TestModel struct {
+	Id        int64
+	FirstName string
+	Age       int
+	LastName  *sql.NullString
 }
 
 func TestSelect_Build(t *testing.T) {
@@ -93,7 +98,7 @@ func TestSelect_Build(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.builder.Build()
-			assert.Nil(t, err)
+			assert.Equal(t, tt.wantErr, err)
 			if err != nil {
 				return
 			}

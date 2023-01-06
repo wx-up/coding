@@ -2,9 +2,9 @@ package orm
 
 import (
 	"context"
-	"errors"
 	"github.com/gertd/go-pluralize"
 	"github.com/iancoleman/strcase"
+	"github.com/wx-up/coding/orm/internal/errs"
 	"reflect"
 	"strings"
 )
@@ -143,7 +143,7 @@ func (s *Selector[T]) buildExpression(expr expression) error {
 		}
 
 	default:
-		return errors.New("不支持的表达式")
+		return errs.NewErrUnsupportedExpressionType(expr)
 	}
 	return nil
 }
