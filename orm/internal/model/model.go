@@ -1,4 +1,4 @@
-package orm
+package model
 
 import (
 	"fmt"
@@ -6,60 +6,63 @@ import (
 	"reflect"
 )
 
-// ModelOpt 带校验的 option 模式，有问题则返回 error
-type ModelOpt func(*Model) error
+// Opt 带校验的 option 模式，有问题则返回 error
+type Opt func(*Model) error
 
-func ModelWithTableName(tblName string) ModelOpt {
+func WithTableName(tblName string) Opt {
 	return func(model *Model) error {
-		model.tableName = tblName
+		model.TableName = tblName
 		return nil
 	}
 }
 
-// ModelWithColumnName 修改字段的列名
+// WithColumnName 修改字段的列名
 // 这种设计不够通用，当 field 结构体中新增了其他字段比如 autoincrement
 // 那么又要写一个类似这样子的方法 ModelWithColumnAutoincrement
 // 方法膨胀的比较快，相比之下 ModelWithColumn 更加通用
-func ModelWithColumnName(field string, column string) ModelOpt {
+func WithColumnName(field string, column string) Opt {
 	return func(model *Model) error {
-		fd, ok := model.fieldMap[field]
+		fd, ok := model.FieldMap[field]
 		if !ok {
 			return errs.NewErrUnknownField(field)
 		}
-		fd.colName = column
+		fd.ColName = column
 		return nil
 	}
 }
 
-// ModelWithColumn 直接让用户传递一个 field 结构体，更加通用
-func ModelWithColumn(field string, col *field) ModelOpt {
+// WithColumn 直接让用户传递一个 field 结构体，更加通用
+func WithColumn(field string, col *Field) Opt {
 	return func(model *Model) error {
-		_, ok := model.fieldMap[field]
+		_, ok := model.FieldMap[field]
 		if !ok {
 			return errs.NewErrUnknownField(field)
 		}
-		model.fieldMap[field] = col
+		model.FieldMap[field] = col
 		return nil
 	}
 }
 
 type Model struct {
 	// 结构体对应的表名
-	tableName string
+	TableName string
 	// 结构体所有字段的元数据信息
-	fieldMap map[string]*field
+	FieldMap map[string]*Field
 
 	// 数据库列名的映射
-	columnMap map[string]*field
+	ColumnMap map[string]*Field
 }
 
-type field struct {
+type Field struct {
 	// 当前字段名
-	name string
+	Name string
 	// 当前字段对应的列名
-	colName string
+	ColName string
 	// 当前字段的类型，用于结果集生成
-	typ reflect.Type
+	Typ reflect.Type
+
+	// 偏移量 用于 unsafe
+	Offset uintptr
 }
 
 // TableName 自定义表名

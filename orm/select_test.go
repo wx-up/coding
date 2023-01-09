@@ -166,6 +166,17 @@ func TestSelector_Get(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:    "invalid cols", // select 的列，模型中没有对应的字段，报错
+			query:   "SELECT .*",
+			mockErr: nil,
+			mockRows: func() *sqlmock.Rows {
+				rows := sqlmock.NewRows([]string{"id", "first_name", "age", "last_name", "gender"})
+				rows.AddRow(1, "星期", 24, "三", "男")
+				return rows
+			}(),
+			wantErr: errs.NewErrUnknownColumn("gender"),
+		},
 	}
 
 	// mock

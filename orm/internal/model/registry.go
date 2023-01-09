@@ -1,4 +1,4 @@
-package orm
+package model
 
 import (
 	"github.com/gertd/go-pluralize"
@@ -13,7 +13,7 @@ import (
 // 本案例采用 标签+接口 的方式实现自定义
 type RegistryInterface interface {
 	Get(val any) (*Model, error)
-	Register(val any, opts ...ModelOpt) (*Model, error)
+	Register(val any, opts ...Opt) (*Model, error)
 }
 
 // TagSplit 标签元素的分隔符
@@ -24,8 +24,14 @@ type Registry struct {
 	lock   sync.RWMutex
 }
 
-// get 锁保护，double-check
-func (r *Registry) get(val any) (*Model, error) {
+func NewRegister() *Registry {
+	return &Registry{
+		models: make(map[reflect.Type]*Model),
+	}
+}
+
+// Get 锁保护，double-check
+func (r *Registry) Get(val any) (*Model, error) {
 	key := reflect.TypeOf(val)
 	r.lock.RLock()
 	model, ok := r.models[key]
@@ -70,8 +76,8 @@ func (r *Registry) parseModel(val any) (*Model, error) {
 		return nil, errs.ErrParseModelValType
 	}
 	fieldCnt := typ.NumField()
-	fieldMap := make(map[string]*field, fieldCnt)
-	columnMap := make(map[string]*field, fieldCnt)
+	fieldMap := make(map[string]*Field, fieldCnt)
+	columnMap := make(map[string]*Field, fieldCnt)
 	for i := 0; i < fieldCnt; i++ {
 		f := typ.Field(i)
 		ormTagValues := parseTag(f.Tag)
@@ -82,10 +88,10 @@ func (r *Registry) parseModel(val any) (*Model, error) {
 			colName = strcase.ToSnake(f.Name)
 		}
 
-		fdMeta := &field{
-			colName: colName,
-			typ:     f.Type,
-			name:    f.Name,
+		fdMeta := &Field{
+			ColName: colName,
+			Typ:     f.Type,
+			Name:    f.Name,
 		}
 
 		fieldMap[f.Name] = fdMeta
@@ -93,9 +99,9 @@ func (r *Registry) parseModel(val any) (*Model, error) {
 
 	}
 	return &Model{
-		tableName: parseTableName(val, typ),
-		fieldMap:  fieldMap,
-		columnMap: columnMap,
+		TableName: parseTableName(val, typ),
+		FieldMap:  fieldMap,
+		ColumnMap: columnMap,
 	}, nil
 }
 

@@ -8,6 +8,7 @@ import (
 var (
 	ErrParseModelValType = errors.New("orm: 只支持结构体或者结构体的指针")
 	ErrNoRows            = errors.New("orm: 未找到数据")
+	ErrTooManyColumns    = errors.New("orm: 太多的列")
 )
 
 func NewErrUnsupportedExpressionType(expr any) error {
@@ -17,4 +18,8 @@ func NewErrUnsupportedExpressionType(expr any) error {
 
 func NewErrUnknownField(name string) error {
 	return fmt.Errorf("orm: 未知字段 %s", name)
+}
+
+func NewErrUnknownColumn(name string) error {
+	return fmt.Errorf("orm: 未知列名 %s", name)
 }

@@ -3,7 +3,7 @@ package orm
 import (
 	"context"
 	"github.com/wx-up/coding/orm/internal/errs"
-	"reflect"
+	"github.com/wx-up/coding/orm/internal/model"
 	"strings"
 )
 
@@ -21,7 +21,7 @@ type Selector[T any] struct {
 	ps []Predicate
 
 	// 元数据
-	model *Model
+	model *model.Model
 
 	db *DB
 }
@@ -63,13 +63,13 @@ func (s *Selector[T]) TableName() string {
 		return tblName
 	}
 	// 结构体名称的复数
-	return "`" + s.model.tableName + "`"
+	return "`" + s.model.TableName + "`"
 }
 
 func (s *Selector[T]) Build() (*Query, error) {
 	var err error
 	t := new(T)
-	s.model, err = s.db.r.get(t)
+	s.model, err = s.db.r.Get(t)
 	if err != nil {
 		return nil, err
 	}
@@ -112,56 +112,11 @@ func (s *Selector[T]) Get(ctx context.Context) (*T, error) {
 		return nil, err
 	}
 
-	// 获取数据库返回的列名
-	columns, err := rows.Columns()
-	if err != nil {
-		return nil, err
-	}
-
 	if !rows.Next() {
-		return nil, errs.ErrNoRows
+		return nil, ErrNoRows
 	}
 
-	// 缓存，避免多次反射
-	reflectVs := make([]reflect.Value, 0, len(columns))
-
-	// 将数据库返回的值 scan 到 vs 中
-	vs := make([]any, 0, len(columns))
-	for _, col := range columns {
-		fd, ok := s.model.columnMap[col]
-		// 当结构体中没有对应列的字段时，append 一个字节切片，承接 scan 的值
-		// 因为 scan 函数需要保证列数和值参数个数一致，否则会报错
-		if !ok {
-			vs = append(vs, &[]byte{})
-			reflectVs = append(reflectVs, reflect.Value{})
-			continue
-		}
-		reflectV := reflect.New(fd.typ)
-		vs = append(vs, reflectV.Interface())
-		reflectVs = append(reflectVs, reflectV)
-	}
-
-	err = rows.Scan(vs...)
-	if err != nil {
-		return nil, err
-	}
-
-	t := new(T)
-	value := reflect.ValueOf(t).Elem()
-	for index, col := range columns {
-		// 根据列名获取字段名
-		fd, ok := s.model.columnMap[col]
-		if !ok {
-			continue
-		}
-		vField := value.FieldByName(fd.name)
-		if !vField.CanSet() {
-			continue
-		}
-		// 通过反射设置字段的值
-		vField.Set(reflectVs[index].Elem())
-	}
-	return t, nil
+	return nil, nil
 }
 
 func (s *Selector[T]) GetMulti(ctx context.Context) ([]*T, error) {
@@ -178,12 +133,12 @@ func (s *Selector[T]) buildExpression(expr expression) error {
 		s.sb.WriteByte('`')
 
 		// 检测用户传递的字段 ( C("Name") ) 是否合法
-		fd, ok := s.model.fieldMap[v.name]
+		fd, ok := s.model.FieldMap[v.name]
 		if !ok {
 			return errs.NewErrUnknownField(v.name)
 		}
 
-		s.sb.WriteString(fd.colName)
+		s.sb.WriteString(fd.ColName)
 		s.sb.WriteByte('`')
 	case Val:
 		s.sb.WriteByte('?')
