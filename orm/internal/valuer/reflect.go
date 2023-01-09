@@ -13,6 +13,15 @@ type reflectValuer struct {
 	t any
 }
 
+var _ Factory = NewReflectValuer
+
+func NewReflectValuer(model *model.Model, t any) Valuer {
+	return &reflectValuer{
+		model: model,
+		t:     t,
+	}
+}
+
 func (r reflectValuer) SetColumns(rows *sql.Rows) error {
 	// 获取数据库返回的列名
 	columns, err := rows.Columns()

@@ -116,7 +116,9 @@ func (s *Selector[T]) Get(ctx context.Context) (*T, error) {
 		return nil, ErrNoRows
 	}
 
-	return nil, nil
+	t := new(T)
+
+	return t, s.db.valCreator(s.model, t).SetColumns(rows)
 }
 
 func (s *Selector[T]) GetMulti(ctx context.Context) ([]*T, error) {

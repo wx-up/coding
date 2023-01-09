@@ -92,6 +92,7 @@ func (r *Registry) parseModel(val any) (*Model, error) {
 			ColName: colName,
 			Typ:     f.Type,
 			Name:    f.Name,
+			Offset:  f.Offset,
 		}
 
 		fieldMap[f.Name] = fdMeta

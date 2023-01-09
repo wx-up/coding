@@ -121,13 +121,13 @@ func TestSelector_Get(t *testing.T) {
 		_ = mockDB.Close()
 	}()
 
-	db, err := OpenDB(mockDB)
+	db, err := OpenDB(mockDB, DBWithUnsafeValCreator())
 	require.NoError(t, err)
 	tests := []struct {
 		name     string
 		query    string
-		mockErr  error
-		mockRows *sqlmock.Rows
+		mockErr  error         // mock 错误
+		mockRows *sqlmock.Rows // mock 返回值
 		wantErr  error
 		wantVal  any
 	}{
@@ -167,15 +167,26 @@ func TestSelector_Get(t *testing.T) {
 			},
 		},
 		{
-			name:    "invalid cols", // select 的列，模型中没有对应的字段，报错
+			name:    "invalid cols", // 列中存在模型中没有的字段
 			query:   "SELECT .*",
 			mockErr: nil,
 			mockRows: func() *sqlmock.Rows {
-				rows := sqlmock.NewRows([]string{"id", "first_name", "age", "last_name", "gender"})
-				rows.AddRow(1, "星期", 24, "三", "男")
+				rows := sqlmock.NewRows([]string{"id", "first_name", "age", "gender"})
+				rows.AddRow(1, "星期", 24, "男")
 				return rows
 			}(),
 			wantErr: errs.NewErrUnknownColumn("gender"),
+		},
+		{
+			name:    "many cols", // 列的数量超过模型中定义的字段数量
+			query:   "SELECT .*",
+			mockErr: nil,
+			mockRows: func() *sqlmock.Rows {
+				rows := sqlmock.NewRows([]string{"id", "first_name", "last_name", "age", "gender"})
+				rows.AddRow(1, "星期", "三", 23, "男")
+				return rows
+			}(),
+			wantErr: errs.ErrTooManyColumns,
 		},
 	}
 
