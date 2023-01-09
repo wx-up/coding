@@ -3,6 +3,7 @@ package orm
 import (
 	"context"
 	"github.com/wx-up/coding/orm/internal/errs"
+	"reflect"
 	"strings"
 )
 
@@ -41,6 +42,18 @@ func (s *Selector[T]) From(tbl string) *Selector[T] {
 	return s
 }
 
+func (s *Selector[T]) GroupBy(cols ...Column) *Selector[T] {
+	return s
+}
+
+func (s *Selector[T]) Having(ps ...Predicate) *Selector[T] {
+	return s
+}
+
+func (s *Selector[T]) OrderBy(order ...OrderBy) *Selector[T] {
+	return s
+}
+
 // TableName 返回表名
 // 如果用户传递了表名就直接按照用户传递的，不做检测它是否携带反引号，没有则追加的逻辑（ 这只是设计上的决策没有对错 ）
 // 如果用户没有传递表名则使用结构体名称的复数，并前后添加反引号
@@ -56,7 +69,7 @@ func (s *Selector[T]) TableName() string {
 func (s *Selector[T]) Build() (*Query, error) {
 	var err error
 	t := new(T)
-	s.model, err = s.db.r.parseModel(t)
+	s.model, err = s.db.r.get(t)
 	if err != nil {
 		return nil, err
 	}
@@ -88,9 +101,67 @@ func (s *Selector[T]) Build() (*Query, error) {
 	}, nil
 }
 
+// Get 查询单条数据
 func (s *Selector[T]) Get(ctx context.Context) (*T, error) {
-	//TODO implement me
-	panic("implement me")
+	query, err := s.Build()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := s.db.db.QueryContext(ctx, query.SQL, query.Args...)
+	if err != nil {
+		return nil, err
+	}
+
+	// 获取数据库返回的列名
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+
+	if !rows.Next() {
+		return nil, errs.ErrNoRows
+	}
+
+	// 缓存，避免多次反射
+	reflectVs := make([]reflect.Value, 0, len(columns))
+
+	// 将数据库返回的值 scan 到 vs 中
+	vs := make([]any, 0, len(columns))
+	for _, col := range columns {
+		fd, ok := s.model.columnMap[col]
+		// 当结构体中没有对应列的字段时，append 一个字节切片，承接 scan 的值
+		// 因为 scan 函数需要保证列数和值参数个数一致，否则会报错
+		if !ok {
+			vs = append(vs, &[]byte{})
+			reflectVs = append(reflectVs, reflect.Value{})
+			continue
+		}
+		reflectV := reflect.New(fd.typ)
+		vs = append(vs, reflectV.Interface())
+		reflectVs = append(reflectVs, reflectV)
+	}
+
+	err = rows.Scan(vs...)
+	if err != nil {
+		return nil, err
+	}
+
+	t := new(T)
+	value := reflect.ValueOf(t).Elem()
+	for index, col := range columns {
+		// 根据列名获取字段名
+		fd, ok := s.model.columnMap[col]
+		if !ok {
+			continue
+		}
+		vField := value.FieldByName(fd.name)
+		if !vField.CanSet() {
+			continue
+		}
+		// 通过反射设置字段的值
+		vField.Set(reflectVs[index].Elem())
+	}
+	return t, nil
 }
 
 func (s *Selector[T]) GetMulti(ctx context.Context) ([]*T, error) {

@@ -7,6 +7,7 @@ import (
 
 var (
 	ErrParseModelValType = errors.New("orm: 只支持结构体或者结构体的指针")
+	ErrNoRows            = errors.New("orm: 未找到数据")
 )
 
 func NewErrUnsupportedExpressionType(expr any) error {

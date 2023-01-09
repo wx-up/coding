@@ -5,8 +5,19 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/wx-up/coding/orm/internal/errs"
 	"reflect"
+	"strings"
 	"sync"
 )
+
+// RegistryInterface 编程注册的方式实现自定义，通过 ModelOpt 来实现自定义
+// 本案例采用 标签+接口 的方式实现自定义
+type RegistryInterface interface {
+	Get(val any) (*Model, error)
+	Register(val any, opts ...ModelOpt) (*Model, error)
+}
+
+// TagSplit 标签元素的分隔符
+const TagSplit = ","
 
 type Registry struct {
 	models map[reflect.Type]*Model
@@ -60,14 +71,59 @@ func (r *Registry) parseModel(val any) (*Model, error) {
 	}
 	fieldCnt := typ.NumField()
 	fieldMap := make(map[string]*field, fieldCnt)
+	columnMap := make(map[string]*field, fieldCnt)
 	for i := 0; i < fieldCnt; i++ {
 		f := typ.Field(i)
-		fieldMap[f.Name] = &field{
-			colName: strcase.ToSnake(f.Name),
+		ormTagValues := parseTag(f.Tag)
+
+		// 列名，如果指定了则取指定的，没有指定则取字段名的下划线形式
+		colName, ok := ormTagValues["column"]
+		if !ok || colName == "" {
+			colName = strcase.ToSnake(f.Name)
 		}
+
+		fdMeta := &field{
+			colName: colName,
+			typ:     f.Type,
+			name:    f.Name,
+		}
+
+		fieldMap[f.Name] = fdMeta
+		columnMap[colName] = fdMeta
+
 	}
 	return &Model{
-		tableName: strcase.ToSnake(pluralize.NewClient().Plural(typ.Name())),
+		tableName: parseTableName(val, typ),
 		fieldMap:  fieldMap,
+		columnMap: columnMap,
 	}, nil
+}
+
+// parseTableName 解析表名，需要判断是否实现了 TableName 接口
+func parseTableName(val any, typ reflect.Type) string {
+	var tableName string
+	if v, ok := val.(TableName); ok {
+		tableName = v.TableName()
+	}
+	if tableName == "" {
+		tableName = strcase.ToSnake(pluralize.NewClient().Plural(typ.Name()))
+	}
+	return tableName
+}
+
+// parseTag 解析 orm 标签
+// orm:"column=id,primary_key"
+func parseTag(tag reflect.StructTag) map[string]string {
+	tagString := tag.Get("orm")
+	kvs := strings.Split(tagString, TagSplit)
+	res := make(map[string]string, len(kvs))
+	for _, kv := range kvs {
+		segments := strings.SplitN(kv, "=", 2)
+		v := ""
+		if len(segments) > 1 {
+			v = segments[1]
+		}
+		res[segments[0]] = v
+	}
+	return res
 }
