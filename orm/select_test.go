@@ -144,7 +144,7 @@ func TestSelector_Get(t *testing.T) {
 			query:    "SELECT .*",
 			mockErr:  nil,
 			mockRows: sqlmock.NewRows([]string{"id"}),
-			wantErr:  errs.ErrNoRows,
+			wantErr:  ErrNoRows,
 		},
 		{
 			name:    "single row",

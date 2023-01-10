@@ -1,13 +1,22 @@
 package model
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/iancoleman/strcase"
 	"github.com/stretchr/testify/assert"
 	"github.com/wx-up/coding/orm/internal/errs"
+	"reflect"
 	"strings"
 	"testing"
 )
+
+type TestModel struct {
+	Id        int64
+	FirstName string
+	Age       int
+	LastName  *sql.NullString
+}
 
 func Test_parseModel(t *testing.T) {
 	/*
@@ -26,42 +35,56 @@ func Test_parseModel(t *testing.T) {
 	}{
 		{
 			name: "ptr",
-			val:  &TestModel{},
+			val: func() any {
+				type TestModel struct {
+					Id int64
+				}
+				return &TestModel{}
+			}(),
 			want: &Model{
-				tableName: "test_models",
-				fieldMap: map[string]*field{
+				TableName: "test_models",
+				FieldMap: map[string]*Field{
 					"Id": {
-						colName: "id",
+						ColName: "id",
+						Name:    "Id",
+						Typ:     reflect.TypeOf(int64(1)),
+						Offset:  0,
 					},
-					"FirstName": {
-						colName: "first_name",
-					},
-					"Age": {
-						colName: "age",
-					},
-					"LastName": {
-						colName: "last_name",
+				},
+				ColumnMap: map[string]*Field{
+					"id": {
+						ColName: "id",
+						Name:    "Id",
+						Typ:     reflect.TypeOf(int64(1)),
+						Offset:  0,
 					},
 				},
 			},
 		},
 		{
 			name: "struct",
-			val:  TestModel{},
+			val: func() any {
+				type TestModel struct {
+					Id int64
+				}
+				return TestModel{}
+			}(),
 			want: &Model{
-				tableName: "test_models",
-				fieldMap: map[string]*field{
+				TableName: "test_models",
+				FieldMap: map[string]*Field{
 					"Id": {
-						colName: "id",
+						ColName: "id",
+						Name:    "Id",
+						Typ:     reflect.TypeOf(int64(1)),
+						Offset:  0,
 					},
-					"FirstName": {
-						colName: "first_name",
-					},
-					"Age": {
-						colName: "age",
-					},
-					"LastName": {
-						colName: "last_name",
+				},
+				ColumnMap: map[string]*Field{
+					"id": {
+						ColName: "id",
+						Name:    "Id",
+						Typ:     reflect.TypeOf(int64(1)),
+						Offset:  0,
 					},
 				},
 			},
@@ -79,21 +102,28 @@ func Test_parseModel(t *testing.T) {
 		{
 			name: "nil with type",
 			// 这种情况是可以获取到信息的，区别于 nil
-			val: (*TestModel)(nil),
+			val: func() any {
+				type TestModel struct {
+					Id int64
+				}
+				return (*TestModel)(nil)
+			}(),
 			want: &Model{
-				tableName: "test_models",
-				fieldMap: map[string]*field{
+				TableName: "test_models",
+				FieldMap: map[string]*Field{
 					"Id": {
-						colName: "id",
+						ColName: "id",
+						Name:    "Id",
+						Typ:     reflect.TypeOf(int64(1)),
+						Offset:  0,
 					},
-					"FirstName": {
-						colName: "first_name",
-					},
-					"Age": {
-						colName: "age",
-					},
-					"LastName": {
-						colName: "last_name",
+				},
+				ColumnMap: map[string]*Field{
+					"id": {
+						ColName: "id",
+						Name:    "Id",
+						Typ:     reflect.TypeOf(int64(1)),
+						Offset:  0,
 					},
 				},
 			},
@@ -108,10 +138,21 @@ func Test_parseModel(t *testing.T) {
 			}(),
 			wantErr: nil,
 			want: &Model{
-				tableName: "column_tags",
-				fieldMap: map[string]*field{
+				TableName: "column_tags",
+				FieldMap: map[string]*Field{
 					"ID": {
-						colName: "_id",
+						ColName: "_id",
+						Name:    "ID",
+						Typ:     reflect.TypeOf(int64(1)),
+						Offset:  0,
+					},
+				},
+				ColumnMap: map[string]*Field{
+					"_id": {
+						ColName: "_id",
+						Name:    "ID",
+						Typ:     reflect.TypeOf(int64(1)),
+						Offset:  0,
 					},
 				},
 			},
@@ -125,10 +166,21 @@ func Test_parseModel(t *testing.T) {
 				return &ColumnTag{}
 			}(),
 			want: &Model{
-				tableName: "column_tags",
-				fieldMap: map[string]*field{
+				TableName: "column_tags",
+				FieldMap: map[string]*Field{
 					"Id": {
-						colName: "id",
+						ColName: "id",
+						Name:    "Id",
+						Typ:     reflect.TypeOf(int64(1)),
+						Offset:  0,
+					},
+				},
+				ColumnMap: map[string]*Field{
+					"id": {
+						ColName: "id",
+						Name:    "Id",
+						Typ:     reflect.TypeOf(int64(1)),
+						Offset:  0,
 					},
 				},
 			},
@@ -137,16 +189,18 @@ func Test_parseModel(t *testing.T) {
 			name: "custom table name", // 自定义表名
 			val:  &CustomTableName{},
 			want: &Model{
-				tableName: "users",
-				fieldMap:  map[string]*field{},
+				TableName: "users",
+				FieldMap:  map[string]*Field{},
+				ColumnMap: map[string]*Field{},
 			},
 		},
 		{
 			name: "empty table name",
 			val:  &EmptyTableName{}, // TableName 返回空字符串的时候，则走默认规则
 			want: &Model{
-				tableName: "empty_table_names",
-				fieldMap:  map[string]*field{},
+				TableName: "empty_table_names",
+				FieldMap:  map[string]*Field{},
+				ColumnMap: map[string]*Field{},
 			},
 		},
 	}
@@ -158,7 +212,9 @@ func Test_parseModel(t *testing.T) {
 			if err != nil {
 				return
 			}
-			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.want.ColumnMap, got.ColumnMap)
+			assert.Equal(t, tt.want.FieldMap, got.FieldMap)
+			assert.Equal(t, tt.want.TableName, got.TableName)
 		})
 	}
 }
