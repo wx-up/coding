@@ -48,6 +48,12 @@ func DBWithUnsafeValCreator() DBOption {
 	}
 }
 
+//func DBWithRegistry(r model.RegistryInterface) DBOption {
+//	return func(db *DB) {
+//
+//	}
+//}
+
 //func MustNewDB(opts ...DBOption) *DB {
 //	db, err := NewDB(opts...)
 //	if err != nil {
