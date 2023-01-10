@@ -3,14 +3,15 @@ package orm
 type op string
 
 const (
-	opEq  op = "="
-	opLt  op = "<"
-	opLte op = "<="
-	opGt  op = ">"
-	opGte op = ">="
-	opNot op = "NOT"
-	opAnd op = "AND"
-	opOr  op = "OR"
+	opEmpty op = ""
+	opEq    op = "="
+	opLt    op = "<"
+	opLte   op = "<="
+	opGt    op = ">"
+	opGte   op = ">="
+	opNot   op = "NOT"
+	opAnd   op = "AND"
+	opOr    op = "OR"
 )
 
 func (p op) String() string {
@@ -30,7 +31,8 @@ func C(name string) Column {
 	}
 }
 
-func (c Column) expr() {}
+func (c Column) expr()       {}
+func (c Column) selectable() {}
 
 func (c Column) Eq(val any) Predicate {
 	return Predicate{

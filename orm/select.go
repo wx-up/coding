@@ -24,12 +24,23 @@ type Selector[T any] struct {
 	model *model.Model
 
 	db *DB
+
+	columns []Selectable
 }
 
 func NewSelector[T any](db *DB) *Selector[T] {
 	return &Selector[T]{
 		db: db,
 	}
+}
+
+type Selectable interface {
+	selectable()
+}
+
+func (s *Selector[T]) Select(cols ...Selectable) *Selector[T] {
+	s.columns = cols
+	return s
 }
 
 func (s *Selector[T]) Where(ps ...Predicate) *Selector[T] {
@@ -73,7 +84,45 @@ func (s *Selector[T]) Build() (*Query, error) {
 	if err != nil {
 		return nil, err
 	}
-	s.sb.WriteString("SELECT * FROM ")
+	s.sb.WriteString("SELECT ")
+	if len(s.columns) == 0 {
+		s.sb.WriteString("*")
+	} else {
+		for i, col := range s.columns {
+			if i > 0 {
+				s.sb.WriteByte(',')
+			}
+			switch c := col.(type) {
+			case Column: // 列
+				fd, ok := s.model.FieldMap[c.name]
+				if !ok {
+					return nil, errs.NewErrUnknownField(c.name)
+				}
+				s.sb.WriteByte('`')
+				s.sb.WriteString(fd.ColName)
+				s.sb.WriteByte('`')
+			case Aggregate: // 聚合函数
+				fd, ok := s.model.FieldMap[c.arg]
+				if !ok {
+					return nil, errs.NewErrUnknownField(c.arg)
+				}
+				s.sb.WriteString(c.fn)
+				s.sb.WriteByte('(')
+				s.sb.WriteByte('`')
+				s.sb.WriteString(fd.ColName)
+				s.sb.WriteByte('`')
+				s.sb.WriteByte(')')
+			case RawExpr:
+				// SELECT xxx  其中 xxx 可以是很复杂的表达式，比如函数调用等等
+				// 所以要预留 args 字段，作为参数
+				s.sb.WriteString(c.raw)
+				if len(c.args) > 0 {
+					s.args = append(s.args, c.args...)
+				}
+			}
+		}
+	}
+	s.sb.WriteString(" FROM ")
 	s.sb.WriteString(s.TableName())
 
 	// 拼接 where
@@ -131,6 +180,12 @@ func (s *Selector[T]) buildExpression(expr expression) error {
 		return nil
 	}
 	switch v := expr.(type) {
+	case RawExpr:
+		s.sb.WriteString(v.raw)
+		if s.args == nil {
+			s.args = make([]any, 0, len(v.args))
+		}
+		s.args = append(s.args, v.args...)
 	case Column:
 		s.sb.WriteByte('`')
 
@@ -164,12 +219,15 @@ func (s *Selector[T]) buildExpression(expr expression) error {
 			s.sb.WriteByte(')')
 		}
 
-		// 操作符
-		if v.op != opNot {
+		// 当操作符不为空的时候再处理
+		if v.op != opEmpty {
+			// 操作符
+			if v.op != opNot {
+				s.sb.WriteString(" ")
+			}
+			s.sb.WriteString(v.op.String())
 			s.sb.WriteString(" ")
 		}
-		s.sb.WriteString(v.op.String())
-		s.sb.WriteString(" ")
 
 		// 如果右表达式是 predicate 则添加括号
 		_, ok = v.right.(Predicate)

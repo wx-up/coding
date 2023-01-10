@@ -211,3 +211,58 @@ func TestSelector_Get(t *testing.T) {
 
 	}
 }
+
+func TestSelector_Select(t *testing.T) {
+	db, err := OpenDB(nil)
+	require.Nil(t, err)
+	tests := []struct {
+		name    string
+		builder QueryBuilder
+		want    *Query
+		wantErr error
+	}{
+		{
+			name:    "specify columns", // 指定列
+			builder: NewSelector[TestModel](db).Select(C("Id"), C("FirstName")),
+			want: &Query{
+				SQL:  "SELECT `id`,`first_name` FROM `test_models`;",
+				Args: nil,
+			},
+		},
+		{
+			name:    "aggregate column", // 聚合函数
+			builder: NewSelector[TestModel](db).Select(Count("Id")),
+			want: &Query{
+				SQL:  "SELECT COUNT(`id`) FROM `test_models`;",
+				Args: nil,
+			},
+		},
+		{
+			name:    "raw sql select", // 原生 SQL Select 查询
+			builder: NewSelector[TestModel](db).Select(Raw("DISTINCT `id`")),
+			want: &Query{
+				SQL:  "SELECT DISTINCT `id` FROM `test_models`;",
+				Args: nil,
+			},
+		},
+		{
+			name:    "raw sql where",
+			builder: NewSelector[TestModel](db).Where(Raw("`name` = ? and `id` = ?", "name", 1).AsPredicate()),
+			want: &Query{
+				SQL:  "SELECT * FROM `test_models` WHERE `name` = ? and `id` = ?;",
+				Args: []any{"name", 1},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.builder.Build()
+			assert.Equal(t, tt.wantErr, err)
+			if err != nil {
+				return
+			}
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
