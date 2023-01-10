@@ -16,6 +16,10 @@ type DB struct {
 	valCreator valuer.Factory
 }
 
+func (db *DB) Migrate(ms ...any) {
+
+}
+
 type DBOption func(db *DB)
 
 // Open 创建 DB 实例

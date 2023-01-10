@@ -11,6 +11,10 @@ var (
 	ErrTooManyColumns    = errors.New("orm: 太多的列")
 )
 
+func NewErrParamEmpty(param string) error {
+	return fmt.Errorf("orm: 参数不能为空 %s", param)
+}
+
 func NewErrUnsupportedExpressionType(expr any) error {
 	// 错误信息加上 orm 前缀，标识错误的源头
 	return fmt.Errorf("orm: 不支持的表达式 %v", expr)
