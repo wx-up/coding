@@ -230,7 +230,7 @@ func TestSelector_Select(t *testing.T) {
 			},
 		},
 		{
-			name:    "specify columns alias",
+			name:    "specify columns alias", // 指定列别名
 			builder: NewSelector[TestModel](db).Select(C("Id").As("_id")).Where(C("Id").Eq(18)),
 			want: &Query{
 				SQL:  "SELECT `id` AS _id FROM `test_models` WHERE `id` = ?;",

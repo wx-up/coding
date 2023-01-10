@@ -85,51 +85,8 @@ func (s *Selector[T]) Build() (*Query, error) {
 		return nil, err
 	}
 	s.sb.WriteString("SELECT ")
-	if len(s.columns) == 0 {
-		s.sb.WriteString("*")
-	} else {
-		for i, col := range s.columns {
-			if i > 0 {
-				s.sb.WriteByte(',')
-			}
-			switch c := col.(type) {
-			case Column: // 列
-				fd, ok := s.model.FieldMap[c.name]
-				if !ok {
-					return nil, errs.NewErrUnknownField(c.name)
-				}
-				s.sb.WriteByte('`')
-				s.sb.WriteString(fd.ColName)
-				s.sb.WriteByte('`')
-				// 如果别名存在，则设置
-				if c.alias != "" {
-					s.sb.WriteString(" AS ")
-					s.sb.WriteString(c.alias)
-				}
-			case Aggregate: // 聚合函数
-				fd, ok := s.model.FieldMap[c.arg]
-				if !ok {
-					return nil, errs.NewErrUnknownField(c.arg)
-				}
-				s.sb.WriteString(c.fn)
-				s.sb.WriteByte('(')
-				s.sb.WriteByte('`')
-				s.sb.WriteString(fd.ColName)
-				s.sb.WriteByte('`')
-				s.sb.WriteByte(')')
-				if c.alias != "" {
-					s.sb.WriteString(" AS ")
-					s.sb.WriteString(c.alias)
-				}
-			case RawExpr:
-				// SELECT xxx  其中 xxx 可以是很复杂的表达式，比如函数调用等等
-				// 所以要预留 args 字段，作为参数
-				s.sb.WriteString(c.raw)
-				if len(c.args) > 0 {
-					s.args = append(s.args, c.args...)
-				}
-			}
-		}
+	if err = s.buildColumns(); err != nil {
+		return nil, err
 	}
 	s.sb.WriteString(" FROM ")
 	s.sb.WriteString(s.TableName())
@@ -157,6 +114,56 @@ func (s *Selector[T]) Build() (*Query, error) {
 		SQL:  s.sb.String(),
 		Args: s.args,
 	}, nil
+}
+
+func (s *Selector[T]) buildColumns() error {
+	if len(s.columns) == 0 {
+		s.sb.WriteString("*")
+		return nil
+	}
+	for i, col := range s.columns {
+		if i > 0 {
+			s.sb.WriteByte(',')
+		}
+		switch c := col.(type) {
+		case Column: // 列
+			fd, ok := s.model.FieldMap[c.name]
+			if !ok {
+				return errs.NewErrUnknownField(c.name)
+			}
+			s.sb.WriteByte('`')
+			s.sb.WriteString(fd.ColName)
+			s.sb.WriteByte('`')
+			// 如果别名存在，则设置
+			if c.alias != "" {
+				s.sb.WriteString(" AS ")
+				s.sb.WriteString(c.alias)
+			}
+		case Aggregate: // 聚合函数
+			fd, ok := s.model.FieldMap[c.arg]
+			if !ok {
+				return errs.NewErrUnknownField(c.arg)
+			}
+			s.sb.WriteString(c.fn)
+			s.sb.WriteByte('(')
+			s.sb.WriteByte('`')
+			s.sb.WriteString(fd.ColName)
+			s.sb.WriteByte('`')
+			s.sb.WriteByte(')')
+			if c.alias != "" {
+				s.sb.WriteString(" AS ")
+				s.sb.WriteString(c.alias)
+			}
+		case RawExpr:
+			// SELECT xxx  其中 xxx 可以是很复杂的表达式，比如函数调用等等
+			// 所以要预留 args 字段，作为参数
+			s.sb.WriteString(c.raw)
+			if len(c.args) > 0 {
+				s.args = append(s.args, c.args...)
+			}
+		}
+	}
+	return nil
 }
 
 // Get 查询单条数据
