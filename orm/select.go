@@ -101,6 +101,11 @@ func (s *Selector[T]) Build() (*Query, error) {
 				s.sb.WriteByte('`')
 				s.sb.WriteString(fd.ColName)
 				s.sb.WriteByte('`')
+				// 如果别名存在，则设置
+				if c.alias != "" {
+					s.sb.WriteString(" AS ")
+					s.sb.WriteString(c.alias)
+				}
 			case Aggregate: // 聚合函数
 				fd, ok := s.model.FieldMap[c.arg]
 				if !ok {
@@ -112,6 +117,10 @@ func (s *Selector[T]) Build() (*Query, error) {
 				s.sb.WriteString(fd.ColName)
 				s.sb.WriteByte('`')
 				s.sb.WriteByte(')')
+				if c.alias != "" {
+					s.sb.WriteString(" AS ")
+					s.sb.WriteString(c.alias)
+				}
 			case RawExpr:
 				// SELECT xxx  其中 xxx 可以是很复杂的表达式，比如函数调用等等
 				// 所以要预留 args 字段，作为参数

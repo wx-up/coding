@@ -230,10 +230,26 @@ func TestSelector_Select(t *testing.T) {
 			},
 		},
 		{
+			name:    "specify columns alias",
+			builder: NewSelector[TestModel](db).Select(C("Id").As("_id")).Where(C("Id").Eq(18)),
+			want: &Query{
+				SQL:  "SELECT `id` AS _id FROM `test_models` WHERE `id` = ?;",
+				Args: []any{18},
+			},
+		},
+		{
 			name:    "aggregate column", // 聚合函数
 			builder: NewSelector[TestModel](db).Select(Count("Id")),
 			want: &Query{
 				SQL:  "SELECT COUNT(`id`) FROM `test_models`;",
+				Args: nil,
+			},
+		},
+		{
+			name:    "aggregate column alias", // 聚合函数别名
+			builder: NewSelector[TestModel](db).Select(Sum("Id").As("sum_id")),
+			want: &Query{
+				SQL:  "SELECT SUM(`id`) AS sum_id FROM `test_models`;",
 				Args: nil,
 			},
 		},

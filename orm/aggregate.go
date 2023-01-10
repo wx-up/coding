@@ -7,9 +7,21 @@ type Aggregate struct {
 	arg string
 	// 聚合函数名称
 	fn string
+
+	// 别名
+	alias string
 }
 
 func (a Aggregate) selectable() {}
+
+// As 别名
+func (a Aggregate) As(alias string) Aggregate {
+	return Aggregate{
+		arg:   a.arg,
+		fn:    a.fn,
+		alias: alias,
+	}
+}
 
 func Count(col string) Aggregate {
 	return Aggregate{

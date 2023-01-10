@@ -19,7 +19,8 @@ func (p op) String() string {
 }
 
 type Column struct {
-	name string
+	name  string
+	alias string
 }
 
 // C name 为字段名不是列名
@@ -28,6 +29,14 @@ type Column struct {
 func C(name string) Column {
 	return Column{
 		name: name,
+	}
+}
+
+// As 别名
+func (c Column) As(alias string) Column {
+	return Column{
+		name:  c.name,
+		alias: alias,
 	}
 }
 
