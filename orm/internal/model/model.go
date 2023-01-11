@@ -51,6 +51,10 @@ type Model struct {
 
 	// 数据库列名的映射
 	ColumnMap map[string]*Field
+
+	// 固定列的顺序 insert 语句有用
+	// 按照结构体中字段定义的顺序
+	Columns []*Field
 }
 
 type Field struct {
@@ -63,6 +67,9 @@ type Field struct {
 
 	// 偏移量 用于 unsafe
 	Offset uintptr
+
+	// 优化 FieldByName，因为 FieldByIndex 性能更高
+	Index []int
 }
 
 // TableName 自定义表名

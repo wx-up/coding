@@ -68,14 +68,14 @@ func (s *Selector[T]) OrderBy(order ...OrderBy) *Selector[T] {
 // TableName 返回表名
 // 如果用户传递了表名就直接按照用户传递的，不做检测它是否携带反引号，没有则追加的逻辑（ 这只是设计上的决策没有对错 ）
 // 如果用户没有传递表名则使用结构体名称的复数，并前后添加反引号
-func (s *Selector[T]) TableName() string {
-	tblName := s.tbl
-	if tblName != "" {
-		return tblName
-	}
-	// 结构体名称的复数
-	return "`" + s.model.TableName + "`"
-}
+//func (s *Selector[T]) TableName() string {
+//	tblName := s.tbl
+//	if tblName != "" {
+//		return tblName
+//	}
+//	// 结构体名称的复数
+//	return "`" + s.model.TableName + "`"
+//}
 
 func (s *Selector[T]) Build() (*Query, error) {
 	var err error
@@ -89,7 +89,12 @@ func (s *Selector[T]) Build() (*Query, error) {
 		return nil, err
 	}
 	s.sb.WriteString(" FROM ")
-	s.sb.WriteString(s.TableName())
+
+	if s.tbl != "" {
+		s.sb.WriteString(s.tbl)
+	} else {
+		s.sb.WriteString(s.model.TableName)
+	}
 
 	// 拼接 where
 	if len(s.ps) > 0 {

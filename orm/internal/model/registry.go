@@ -78,6 +78,7 @@ func (r *Registry) parseModel(val any) (*Model, error) {
 	fieldCnt := typ.NumField()
 	fieldMap := make(map[string]*Field, fieldCnt)
 	columnMap := make(map[string]*Field, fieldCnt)
+	var columns = make([]*Field, 0, fieldCnt)
 	for i := 0; i < fieldCnt; i++ {
 		f := typ.Field(i)
 		ormTagValues := parseTag(f.Tag)
@@ -93,22 +94,27 @@ func (r *Registry) parseModel(val any) (*Model, error) {
 			Typ:     f.Type,
 			Name:    f.Name,
 			Offset:  f.Offset,
+			Index:   f.Index,
 		}
 
 		fieldMap[f.Name] = fdMeta
 		columnMap[colName] = fdMeta
+		columns = append(columns, fdMeta)
 
 	}
 	return &Model{
 		TableName: parseTableName(val, typ),
 		FieldMap:  fieldMap,
 		ColumnMap: columnMap,
+		Columns:   columns,
 	}, nil
 }
 
 // parseTableName 解析表名，需要判断是否实现了 TableName 接口
 func parseTableName(val any, typ reflect.Type) string {
 	var tableName string
+
+	// 查看结构体是否实现 TableName 接口，实现的话直接调用获取表名
 	if v, ok := val.(TableName); ok {
 		tableName = v.TableName()
 	}

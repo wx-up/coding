@@ -23,6 +23,8 @@ type Column struct {
 	alias string
 }
 
+func (c Column) assign() {}
+
 // C name 为字段名不是列名
 // 对于 orm 来说，用户应该操作字段名，不必知道数据库的定义，从而达到解耦的效果
 // 像 beego 和 gorm 其实操作的是列名

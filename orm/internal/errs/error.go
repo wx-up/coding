@@ -9,6 +9,7 @@ var (
 	ErrParseModelValType = errors.New("orm: 只支持结构体或者结构体的指针")
 	ErrNoRows            = errors.New("orm: 未找到数据")
 	ErrTooManyColumns    = errors.New("orm: 太多的列")
+	ErrInsertValuesEmpty = errors.New("orm: 插入数据为空")
 )
 
 func NewErrParamEmpty(param string) error {
