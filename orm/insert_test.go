@@ -34,7 +34,8 @@ func TestInserter_Build(t *testing.T) {
 			name: "insert one row", // 插入一行记录，全部字段
 			inserter: NewInserter[TestModel](db).Values(&TestModel{
 
-				Id:        1,
+				Id: 1,
+
 				FirstName: "哈哈",
 				Age:       24,
 				LastName: &sql.NullString{
