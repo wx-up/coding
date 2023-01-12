@@ -15,10 +15,8 @@ func TestInserter_Build(t *testing.T) {
 		Age       int64
 		LastName  *sql.NullString
 	}
-
-	//
-	//
 	db, err := OpenDB(nil)
+	//
 	require.Nil(t, err)
 	tests := []struct {
 		name     string
