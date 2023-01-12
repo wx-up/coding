@@ -3,25 +3,16 @@ package orm
 import (
 	"context"
 	"github.com/wx-up/coding/orm/internal/errs"
-	"github.com/wx-up/coding/orm/internal/model"
-	"strings"
 )
 
 type Selector[T any] struct {
-	// SQL builder
-	sb strings.Builder
-
-	// SQL args
-	args []any
+	builder
 
 	// 表名
 	tbl string
 
 	// WHERE 条件
 	ps []Predicate
-
-	// 元数据
-	model *model.Model
 
 	db *DB
 

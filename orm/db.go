@@ -14,6 +14,9 @@ type DB struct {
 	r  *model.Registry
 
 	valCreator valuer.Factory
+
+	// 方言抽象应该放在 db 里面，因为它是属于 db 的，不同的 db 方言不同
+	dialect Dialect
 }
 
 func (db *DB) Migrate(ms ...any) {
@@ -39,6 +42,7 @@ func OpenDB(db *sql.DB, opts ...DBOption) (*DB, error) {
 		r:          model.NewRegister(),
 		db:         db,
 		valCreator: valuer.NewReflectValuer, // 函数式编程
+		dialect:    NewMysqlDialect(),       // 指定方言，默认是 mysql
 	}
 	for _, opt := range opts {
 		opt(res)
@@ -49,6 +53,13 @@ func OpenDB(db *sql.DB, opts ...DBOption) (*DB, error) {
 func DBWithUnsafeValCreator() DBOption {
 	return func(db *DB) {
 		db.valCreator = valuer.NewUnsafeValuer
+	}
+}
+
+// DBWithDialect 指定方言
+func DBWithDialect(d Dialect) DBOption {
+	return func(db *DB) {
+		db.dialect = d
 	}
 }
 

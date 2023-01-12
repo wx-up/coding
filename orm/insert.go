@@ -4,12 +4,10 @@ import (
 	"github.com/wx-up/coding/orm/internal/errs"
 	"github.com/wx-up/coding/orm/internal/model"
 	"reflect"
-	"strings"
 )
 
 type Inserter[T any] struct {
 	db     *DB
-	model  *model.Model
 	values []*T
 
 	// 指定插入的列
@@ -17,6 +15,8 @@ type Inserter[T any] struct {
 
 	// 用于实现 upsert 语句，当出现冲突时更新指定的字段
 	onConflict *ConflictKey
+
+	builder
 }
 
 type ConflictKey struct {
@@ -69,6 +69,9 @@ func (i *Inserter[T]) Values(vs ...*T) *Inserter[T] {
 func NewInserter[T any](db *DB) *Inserter[T] {
 	return &Inserter[T]{
 		db: db,
+		builder: builder{
+			dialect: db.dialect,
+		},
 	}
 }
 
@@ -76,21 +79,16 @@ func (i *Inserter[T]) Build() (*Query, error) {
 	if len(i.values) <= 0 {
 		return nil, errs.ErrInsertValuesEmpty
 	}
-	var (
-		err     error
-		builder strings.Builder
-	)
+	var err error
 	t := new(T)
 	i.model, err = i.db.r.Get(t)
 	if err != nil {
 		return nil, err
 	}
-	builder.WriteString("INSERT INTO ")
-	builder.WriteByte('`')
-	builder.WriteString(i.model.TableName)
-	builder.WriteByte('`')
-	builder.WriteByte(' ')
-	builder.WriteByte('(')
+	i.sb.WriteString("INSERT INTO ")
+	i.quote(i.model.TableName)
+	i.sb.WriteByte(' ')
+	i.sb.WriteByte('(')
 
 	// 不指定列，则为全部的列
 	columns := i.model.Columns
@@ -107,22 +105,20 @@ func (i *Inserter[T]) Build() (*Query, error) {
 
 	for index, col := range columns {
 		if index > 0 {
-			builder.WriteByte(',')
+			i.sb.WriteByte(',')
 		}
-		builder.WriteByte('`')
-		builder.WriteString(col.ColName)
-		builder.WriteByte('`')
+		i.quote(col.ColName)
 	}
 
-	builder.WriteByte(')')
-	builder.WriteString(" VALUES ")
+	i.sb.WriteByte(')')
+	i.sb.WriteString(" VALUES ")
 
 	// map 和 slice 都是要预估容量的
-	args := make([]any, 0, len(i.values)*len(i.model.Columns))
+	i.args = make([]any, 0, len(i.values)*len(columns))
 
 	for valIndex, val := range i.values {
 		if valIndex > 0 {
-			builder.WriteByte(',')
+			i.sb.WriteByte(',')
 		}
 
 		// 如果是指针，则转成结构体
@@ -131,56 +127,29 @@ func (i *Inserter[T]) Build() (*Query, error) {
 			refVal = refVal.Elem()
 		}
 
-		builder.WriteByte('(')
+		i.sb.WriteByte('(')
 		for index, field := range columns {
 			if index > 0 {
-				builder.WriteByte(',')
+				i.sb.WriteByte(',')
 			}
-			builder.WriteByte('?')
+			i.sb.WriteByte('?')
 			//args = append(args, refVal.FieldByName(field.Name).Interface())
-			args = append(args, refVal.FieldByIndex(field.Index).Interface())
+			i.addArgs(refVal.FieldByIndex(field.Index).Interface())
 		}
-		builder.WriteByte(')')
+		i.sb.WriteByte(')')
 	}
 
 	// 构建 ON DUPLICATE KEY UPDATE 语句
 	if i.onConflict != nil {
-		builder.WriteString(" ON DUPLICATE KEY UPDATE ")
-		for index, assign := range i.onConflict.assigns {
-			if index > 0 {
-				builder.WriteByte(',')
-			}
-			switch v := assign.(type) {
-			case Assigment: // 用于生成 name=?
-				fd, ok := i.model.FieldMap[v.column]
-				if !ok {
-					return nil, errs.NewErrUnknownField(v.column)
-				}
-				builder.WriteByte('`')
-				builder.WriteString(fd.ColName)
-				builder.WriteByte('`')
-				builder.WriteString("=?")
-				args = append(args, v.val)
-			case Column: // 用于生成 name=VALUES(name)
-				fd, ok := i.model.FieldMap[v.name]
-				if !ok {
-					return nil, errs.NewErrUnknownField(v.name)
-				}
-				builder.WriteByte('`')
-				builder.WriteString(fd.ColName)
-				builder.WriteByte('`')
-				builder.WriteString("=VALUES(")
-				builder.WriteByte('`')
-				builder.WriteString(fd.ColName)
-				builder.WriteByte('`')
-				builder.WriteByte(')')
-			}
+		err = i.dialect.BuildOnConflict(&i.builder, i.onConflict)
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	builder.WriteByte(';')
+	i.sb.WriteByte(';')
 	return &Query{
-		SQL:  builder.String(),
-		Args: args,
+		SQL:  i.sb.String(),
+		Args: i.args,
 	}, nil
 }
