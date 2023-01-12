@@ -24,7 +24,7 @@ func TestInserter_Build(t *testing.T) {
 		wantErr  error
 	}{
 		{
-			name:     "no row",
+			name:     "no row", // 参数错误
 			inserter: NewInserter[TestModel](db).Values(),
 			wantErr:  errs.ErrInsertValuesEmpty,
 		},
