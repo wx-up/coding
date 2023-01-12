@@ -44,7 +44,7 @@ func (i *Inserter[T]) OnConflict() *ConflictKeyBuilder[T] {
 	}
 }
 
-// 这种实现方式没有上面这种 Builder 模式好，最起码调用 OnConflict 之后用户就很清楚后面的 Update 是在
+// Update 这种实现方式没有上面这种 Builder 模式好，最起码调用 OnConflict 之后用户就很清楚后面的 Update 是在
 // 冲突时指定更新的列
 // 如果这种实现方式，直接 Update 就不够直观
 //func (i *Inserter[T]) Update(as ...Assignable) *Inserter[T] {
