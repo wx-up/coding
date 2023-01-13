@@ -35,6 +35,9 @@ func (m *MysqlDialect) Quoter() byte {
 // BuildOnConflict 内部实现需要 Inserter 的 model 和 args  支持
 // 在 Selector 中也有类似的需求，所以将它们进行抽象，得到 builder 结构体
 func (m *MysqlDialect) BuildOnConflict(b *builder, onConflict *ConflictKey) error {
+	if len(onConflict.assigns) <= 0 {
+		return errs.ErrAssigmentEmpty
+	}
 	b.sb.WriteString(" ON DUPLICATE KEY UPDATE ")
 	for index, assign := range onConflict.assigns {
 		if index > 0 {
@@ -76,5 +79,58 @@ func (s *SqliteDialect) Quoter() byte {
 }
 
 func (s *SqliteDialect) BuildOnConflict(b *builder, onConflict *ConflictKey) error {
+	if len(onConflict.conflictColumns) <= 0 {
+		return errs.ErrConflictEmpty
+	}
+
+	b.sb.WriteString(" ON CONFLICT ")
+	b.sb.WriteByte('(')
+	for index, col := range onConflict.conflictColumns {
+		if index > 0 {
+			b.sb.WriteByte(',')
+		}
+		fd, ok := b.model.FieldMap[col]
+		if !ok {
+			return errs.NewErrUnknownField(col)
+		}
+		b.quote(fd.ColName)
+	}
+	b.sb.WriteByte(')')
+
+	switch onConflict.doNothing {
+	case false:
+		if len(onConflict.assigns) <= 0 {
+			return errs.ErrAssigmentEmpty
+		}
+		b.sb.WriteString(" DO UPDATE SET ")
+		for index, assign := range onConflict.assigns {
+			if index > 0 {
+				b.sb.WriteByte(',')
+			}
+			switch v := assign.(type) {
+			case Assigment: // 用于生成 name=?
+				fd, ok := b.model.FieldMap[v.column]
+				if !ok {
+					return errs.NewErrUnknownField(v.column)
+				}
+				b.quote(fd.ColName)
+				b.sb.WriteString("=?")
+				b.addArgs(v.val)
+			case Column: // 用于生成 column=excluded.column （ excluded 为 sqlite3 的关键字类似 VALUES ）
+				fd, ok := b.model.FieldMap[v.name]
+				if !ok {
+					return errs.NewErrUnknownField(v.name)
+				}
+				b.quote(fd.ColName)
+				b.sb.WriteString("=excluded.")
+				b.quote(fd.ColName)
+			default:
+				return errs.NewErrUnsupportedAssignableType(assign)
+			}
+		}
+	case true:
+		b.sb.WriteString(" NOTHING")
+	}
+
 	return nil
 }

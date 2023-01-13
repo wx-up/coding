@@ -2,7 +2,6 @@ package orm
 
 import (
 	"context"
-	"database/sql"
 )
 
 // Querier select 语句
@@ -13,7 +12,7 @@ type Querier[T any] interface {
 
 // Executor delete、update、insert 语句
 type Executor interface {
-	Exec(ctx context.Context) (sql.Result, error)
+	Exec(ctx context.Context) Result
 }
 
 // QueryBuilder 构建 SQL

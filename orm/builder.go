@@ -19,6 +19,11 @@ type builder struct {
 
 // addArgs 添加参数
 func (b *builder) addArgs(args ...any) {
+	if b.args == nil {
+		// WHERE 很少有查询能超过八个参数的
+		// INSERT 是在外部初始化的，i.args = make([]any, 0, len(i.values)*len(columns))
+		b.args = make([]any, 0, 8)
+	}
 	b.args = append(b.args, args...)
 }
 

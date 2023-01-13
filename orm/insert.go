@@ -1,6 +1,7 @@
 package orm
 
 import (
+	"context"
 	"github.com/wx-up/coding/orm/internal/errs"
 	"github.com/wx-up/coding/orm/internal/model"
 	"reflect"
@@ -19,21 +20,55 @@ type Inserter[T any] struct {
 	builder
 }
 
+func (i *Inserter[T]) Exec(ctx context.Context) Result {
+	q, err := i.Build()
+	if err != nil {
+		return Result{err: err}
+	}
+	res, err := i.db.db.ExecContext(ctx, q.SQL, q.Args...)
+	return Result{
+		err: err,
+		res: res,
+	}
+}
+
 type ConflictKey struct {
-	assigns []Assignable
+	assigns         []Assignable
+	doNothing       bool
+	conflictColumns []string
 }
 
 type ConflictKeyBuilder[T any] struct {
-	i       *Inserter[T]
-	assigns []Assignable
+	i         *Inserter[T]
+	assigns   []Assignable
+	doNothing bool
+
+	// 指定冲突的列，mysql 是不支持的，但是 sqlite3 是支持的
+	conflictColumns []string
 }
 
 func (c *ConflictKeyBuilder[T]) Build() *ConflictKey {
-	return &ConflictKey{assigns: c.assigns}
+	return &ConflictKey{
+		assigns:         c.assigns,
+		doNothing:       c.doNothing,
+		conflictColumns: c.conflictColumns,
+	}
+}
+
+// ConflictColumns 指定冲突的列
+func (c *ConflictKeyBuilder[T]) ConflictColumns(cols []string) *ConflictKeyBuilder[T] {
+	c.conflictColumns = cols
+	return c
 }
 
 func (c *ConflictKeyBuilder[T]) Update(as ...Assignable) *Inserter[T] {
 	c.assigns = as
+	c.i.onConflict = c.Build()
+	return c.i
+}
+
+func (c *ConflictKeyBuilder[T]) DoNothing() *Inserter[T] {
+	c.doNothing = true
 	c.i.onConflict = c.Build()
 	return c.i
 }
