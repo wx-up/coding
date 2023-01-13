@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/wx-up/coding/orm/internal/errs"
 	"github.com/wx-up/coding/orm/internal/model"
-	"reflect"
 )
 
 type Inserter[T any] struct {
@@ -155,21 +154,19 @@ func (i *Inserter[T]) Build() (*Query, error) {
 		if valIndex > 0 {
 			i.sb.WriteByte(',')
 		}
-
-		// 如果是指针，则转成结构体
-		refVal := reflect.ValueOf(val)
-		for refVal.Kind() == reflect.Ptr {
-			refVal = refVal.Elem()
-		}
-
+		valCreator := i.db.valCreator(i.model, val)
 		i.sb.WriteByte('(')
 		for index, field := range columns {
 			if index > 0 {
 				i.sb.WriteByte(',')
 			}
 			i.sb.WriteByte('?')
+			arg, err := valCreator.Field(field.Name)
+			if err != nil {
+				return nil, err
+			}
 			//args = append(args, refVal.FieldByName(field.Name).Interface())
-			i.addArgs(refVal.FieldByIndex(field.Index).Interface())
+			i.addArgs(arg)
 		}
 		i.sb.WriteByte(')')
 	}

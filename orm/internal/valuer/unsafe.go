@@ -13,6 +13,18 @@ type unsafeValuer struct {
 	model *model.Model
 }
 
+func (u unsafeValuer) Field(name string) (any, error) {
+	field, ok := u.model.FieldMap[name]
+	if !ok {
+		return nil, errs.NewErrUnknownField(name)
+	}
+	ptr := unsafe.Pointer(uintptr(u.addr) + field.Offset)
+	// 确切类型的方式读取：*(*int)(ptr)
+	// 下面是任意类型的读取：
+	val := reflect.NewAt(field.Typ, ptr)
+	return val, nil
+}
+
 var _ Factory = NewUnsafeValuer
 
 func NewUnsafeValuer(model *model.Model, t any) Valuer {

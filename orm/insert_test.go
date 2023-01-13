@@ -137,3 +137,7 @@ func TestInserter_Build(t *testing.T) {
 		})
 	}
 }
+
+func Test(t *testing.T) {
+
+}

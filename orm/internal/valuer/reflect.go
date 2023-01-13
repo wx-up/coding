@@ -13,6 +13,20 @@ type reflectValuer struct {
 	t any
 }
 
+func (r reflectValuer) Field(name string) (any, error) {
+	// 如果是指针，则转成结构体
+	refVal := reflect.ValueOf(r.t)
+	for refVal.Kind() == reflect.Ptr {
+		refVal = refVal.Elem()
+	}
+	field, ok := r.model.FieldMap[name]
+	if !ok {
+		return nil, errs.NewErrUnknownField(name)
+	}
+
+	return refVal.FieldByIndex(field.Index).Interface(), nil
+}
+
 var _ Factory = NewReflectValuer
 
 func NewReflectValuer(model *model.Model, t any) Valuer {

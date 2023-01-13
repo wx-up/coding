@@ -43,6 +43,13 @@ func (m *MysqlDialect) BuildOnConflict(b *builder, onConflict *ConflictKey) erro
 		if index > 0 {
 			b.sb.WriteByte(',')
 		}
+
+		// 其实可以将标记接口实现，类似 gorm 的做法，但是会有一个难点：在 SQL 中一个实体放在不同部分的时候，构建逻辑是不同的
+		// 比如 aggregate 实体 放在 SELECT 中是可以有别名的：
+		// 	SELECT AVG(`age`) as avg_age
+		// 放在 HAVING 中则是不能用别名的
+		//  HAVING AVG(`age`) < 10
+		// switch 的好处就是逻辑清晰，可读性强，当 case 比较多的时候维护性也比较差
 		switch v := assign.(type) {
 		case Assigment: // 用于生成 name=?
 			fd, ok := b.model.FieldMap[v.column]

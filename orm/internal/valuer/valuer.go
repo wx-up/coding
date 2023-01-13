@@ -17,6 +17,9 @@ import (
 
 type Valuer interface {
 	SetColumns(rows *sql.Rows) error
+
+	// Field 获取字段的值
+	Field(name string) (any, error)
 }
 
 type Factory func(model *model.Model, t any) Valuer
