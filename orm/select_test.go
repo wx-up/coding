@@ -4,10 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/DATA-DOG/go-sqlmock"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/wx-up/coding/orm/internal/errs"
+	"github.com/wx-up/coding/orm/internal/valuer"
 	"testing"
 )
 
@@ -16,6 +19,17 @@ type TestModel struct {
 	FirstName string
 	Age       int
 	LastName  *sql.NullString
+}
+
+func (TestModel) CreateSQL() string {
+	return `
+CREATE TABLE IF NOT EXISTS test_models(
+    id INTEGER PRIMARY KEY,
+    first_name TEXT NOT NULL,
+    age INTEGER,
+    last_name TEXT NOT NULL
+)
+`
 }
 
 func TestSelect_Build(t *testing.T) {
@@ -281,4 +295,50 @@ func TestSelector_Select(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func BenchmarkQuerier(b *testing.B) {
+	db, err := Open("sqlite3", fmt.Sprintf("file:benchmark_get.db?cache=shared&mode=memory"))
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	_, err = db.db.Exec(TestModel{}.CreateSQL())
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	res, err := db.db.Exec("INSERT INTO `test_models`(`id`,`first_name`,`age`,`last_name`)"+
+		"VALUES (?,?,?,?)", 12, "Wei", 18, "Xin")
+
+	if err != nil {
+		b.Fatal(err)
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		b.Fatal(err)
+	}
+	if affected == 0 {
+		b.Fatal()
+	}
+	b.ResetTimer()
+	b.Run("unsafe", func(b *testing.B) {
+		db.valCreator = valuer.NewUnsafeValuer
+		for i := 0; i < b.N; i++ {
+			_, err = NewSelector[TestModel](db).Get(context.Background())
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("reflect", func(b *testing.B) {
+		db.valCreator = valuer.NewReflectValuer
+		for i := 0; i < b.N; i++ {
+			_, err = NewSelector[TestModel](db).Get(context.Background())
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
 }
