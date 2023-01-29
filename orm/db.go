@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"github.com/wx-up/coding/orm/internal/model"
 	"github.com/wx-up/coding/orm/internal/valuer"
+	"go.uber.org/multierr"
 )
 
 // DB 它其实是 sql.DB 的一个装饰器
@@ -47,6 +48,30 @@ func (db *DB) BeginTx(ctx context.Context, opt *sql.TxOptions) (*Tx, error) {
 		tx:   tx,
 		core: db.core,
 	}, nil
+}
+
+func (db *DB) DoTx(ctx context.Context, opt *sql.TxOptions, task func(ctx context.Context, tx *Tx) error) (err error) {
+	tx, err := db.BeginTx(ctx, opt)
+	if err != nil {
+		return
+	}
+
+	// beego、gorm 都是使用标记位，而不使用 recover
+	panicked := true
+	defer func() {
+		if panicked || err != nil {
+			e := tx.Rollback()
+			// 将错误进行合并
+			err = multierr.Combine(err, e)
+			return
+		} else {
+			err = multierr.Combine(err, tx.Commit())
+			return
+		}
+	}()
+	err = task(ctx, tx)
+	panicked = false
+	return
 }
 
 type DBOption func(db *DB)

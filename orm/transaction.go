@@ -35,6 +35,15 @@ func (tx *Tx) Rollback() error {
 	return tx.tx.Rollback()
 }
 
+func (tx *Tx) RollbackIfNotCommit() error {
+	// 当事务已经结束（ 提交或者回滚 ），再调用 rollback 会返回 sql.ErrTxDone 错误
+	err := tx.tx.Rollback()
+	if err == sql.ErrTxDone {
+		return nil
+	}
+	return err
+}
+
 type Session interface {
 	// 直接返回一个包装结构体 core，这样子的好处可以防止接口 Session 膨胀
 	// 如果将 Registry 和 Factory 平铺出来就会定义类似如下的接口
@@ -55,7 +64,7 @@ type core struct {
 }
 
 func (c core) Dialect() Dialect {
-	return c.dialect()
+	return c.dialect
 }
 
 func (c core) R() *model.Registry {
