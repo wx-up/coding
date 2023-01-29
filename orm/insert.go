@@ -7,7 +7,7 @@ import (
 )
 
 type Inserter[T any] struct {
-	db     *DB
+	sess   Session
 	values []*T
 
 	// 指定插入的列
@@ -24,7 +24,7 @@ func (i *Inserter[T]) Exec(ctx context.Context) Result {
 	if err != nil {
 		return Result{err: err}
 	}
-	res, err := i.db.db.ExecContext(ctx, q.SQL, q.Args...)
+	res, err := i.sess.execContext(ctx, q.SQL, q.Args...)
 	return Result{
 		err: err,
 		res: res,
@@ -100,11 +100,10 @@ func (i *Inserter[T]) Values(vs ...*T) *Inserter[T] {
 	return i
 }
 
-func NewInserter[T any](db *DB) *Inserter[T] {
+func NewInserter[T any](sess Session) *Inserter[T] {
 	return &Inserter[T]{
-		db: db,
 		builder: builder{
-			dialect: db.dialect,
+			dialect: sess.getCore().Dialect(),
 		},
 	}
 }
@@ -115,7 +114,7 @@ func (i *Inserter[T]) Build() (*Query, error) {
 	}
 	var err error
 	t := new(T)
-	i.model, err = i.db.r.Get(t)
+	i.model, err = i.sess.getCore().R().Get(t)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +153,7 @@ func (i *Inserter[T]) Build() (*Query, error) {
 		if valIndex > 0 {
 			i.sb.WriteByte(',')
 		}
-		valCreator := i.db.valCreator(i.model, val)
+		valCreator := i.sess.getCore().ValCreator()(i.model, val)
 		i.sb.WriteByte('(')
 		for index, field := range columns {
 			if index > 0 {

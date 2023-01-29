@@ -1,6 +1,7 @@
 package orm
 
 import (
+	"context"
 	"database/sql"
 	"github.com/wx-up/coding/orm/internal/model"
 	"github.com/wx-up/coding/orm/internal/valuer"
@@ -17,10 +18,35 @@ type DB struct {
 
 	// 方言抽象应该放在 db 里面，因为它是属于 db 的，不同的 db 方言不同
 	dialect Dialect
+
+	core core
+}
+
+func (db *DB) getCore() core {
+	return db.core
+}
+
+func (db *DB) queryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	return db.db.QueryContext(ctx, query, args...)
+}
+
+func (db *DB) execContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	return db.db.ExecContext(ctx, query, args...)
 }
 
 func (db *DB) Migrate(ms ...any) {
 
+}
+
+func (db *DB) BeginTx(ctx context.Context, opt *sql.TxOptions) (*Tx, error) {
+	tx, err := db.db.BeginTx(ctx, opt)
+	if err != nil {
+		return nil, err
+	}
+	return &Tx{
+		tx:   tx,
+		core: db.core,
+	}, nil
 }
 
 type DBOption func(db *DB)
@@ -39,10 +65,12 @@ func Open(driver string, dsn string, opts ...DBOption) (*DB, error) {
 // 该方法的好处是方便 mock 测试
 func OpenDB(db *sql.DB, opts ...DBOption) (*DB, error) {
 	res := &DB{
-		r:          model.NewRegister(),
-		db:         db,
-		valCreator: valuer.NewReflectValuer, // 函数式编程
-		dialect:    NewMysqlDialect(),       // 指定方言，默认是 mysql
+		core: core{
+			r:          model.NewRegister(),
+			valCreator: valuer.NewReflectValuer, // 函数式编程,
+			dialect:    NewMysqlDialect(),       // 指定方言，默认是 mysql
+		},
+		db: db,
 	}
 	for _, opt := range opts {
 		opt(res)

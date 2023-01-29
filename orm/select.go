@@ -14,20 +14,27 @@ type Selector[T any] struct {
 	// WHERE 条件
 	ps []Predicate
 
-	db *DB
-
 	columns []Selectable
+
+	sess Session
 }
 
-func NewSelector[T any](db *DB) *Selector[T] {
+func NewSelector[T any](sess Session) *Selector[T] {
 	return &Selector[T]{
-		db: db,
+		sess: sess,
 	}
 }
 
 type Selectable interface {
 	selectable()
 }
+
+/*
+// 给标记接口具体的实现
+type Selectable interface {
+	selectable(b *builder) error
+}
+*/
 
 func (s *Selector[T]) Select(cols ...Selectable) *Selector[T] {
 	s.columns = cols
@@ -71,7 +78,7 @@ func (s *Selector[T]) OrderBy(order ...OrderBy) *Selector[T] {
 func (s *Selector[T]) Build() (*Query, error) {
 	var err error
 	t := new(T)
-	s.model, err = s.db.r.Get(t)
+	s.model, err = s.sess.getCore().R().Get(t)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +175,7 @@ func (s *Selector[T]) Get(ctx context.Context) (*T, error) {
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.db.db.QueryContext(ctx, query.SQL, query.Args...)
+	rows, err := s.sess.queryContext(ctx, query.SQL, query.Args...)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +186,7 @@ func (s *Selector[T]) Get(ctx context.Context) (*T, error) {
 
 	t := new(T)
 
-	return t, s.db.valCreator(s.model, t).SetColumns(rows)
+	return t, s.sess.getCore().ValCreator()(s.model, t).SetColumns(rows)
 }
 
 func (s *Selector[T]) GetMulti(ctx context.Context) ([]*T, error) {
