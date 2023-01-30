@@ -32,7 +32,6 @@ func TestMiddleware(t *testing.T) {
 		ctx.RespStatusCode = 200
 		ctx.RespData = []byte("hello, world")
 	})
-
 	s.Use((&MiddlewareBuilder{Tracer: tracer}).Build())
 	s.Start(":8081")
 }
