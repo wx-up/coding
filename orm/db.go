@@ -116,6 +116,12 @@ func DBWithDialect(d Dialect) DBOption {
 	}
 }
 
+func DBWithMiddlewares(ms []Middleware) DBOption {
+	return func(db *DB) {
+		db.core.ms = append(db.core.ms, ms...)
+	}
+}
+
 //func DBWithRegistry(r model.RegistryInterface) DBOption {
 //	return func(db *DB) {
 //

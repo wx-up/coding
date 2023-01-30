@@ -23,9 +23,20 @@ type Selector[T any] struct {
 }
 
 func NewSelector[T any](sess Session) *Selector[T] {
-	return &Selector[T]{
+	core := sess.getCore()
+	s := &Selector[T]{
 		sess: sess,
+		// 获取设置在 DB 对象上的 middlewares
+		ms: core.Middlewares(),
 	}
+	s.dialect = core.Dialect()
+	return s
+}
+
+// Use 添加 Selector 层面的 middleware
+func (s *Selector[T]) Use(ms []Middleware) *Selector[T] {
+	s.ms = append(s.ms, ms...)
+	return s
 }
 
 type Selectable interface {
@@ -94,7 +105,7 @@ func (s *Selector[T]) Build() (*Query, error) {
 	if s.tbl != "" {
 		s.sb.WriteString(s.tbl)
 	} else {
-		s.sb.WriteString(s.model.TableName)
+		s.quote(s.model.TableName)
 	}
 
 	// 拼接 where

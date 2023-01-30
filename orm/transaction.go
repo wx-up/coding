@@ -61,6 +61,11 @@ type core struct {
 	r          *model.Registry
 	valCreator valuer.Factory
 	dialect    Dialect
+	ms         []Middleware
+}
+
+func (c core) Middlewares() []Middleware {
+	return c.ms
 }
 
 func (c core) Dialect() Dialect {
