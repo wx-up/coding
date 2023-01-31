@@ -36,15 +36,6 @@ func (r *RawQuerier[T]) Use(ms []Middleware) *RawQuerier[T] {
 func (r *RawQuerier[T]) Get(ctx context.Context) (*T, error) {
 	return r.get(ctx)
 }
-
-func (r *RawQuerier[T]) GetMulti(ctx context.Context) ([]*T, error) {
-	panic("imp")
-}
-
-func (r *RawQuerier[T]) Exec(ctx context.Context) Result {
-	return Result{}
-}
-
 func (r *RawQuerier[T]) get(ctx context.Context) (*T, error) {
 	root := r.getHandler(r.sess)
 	for i := len(r.ms) - 1; i >= 0; i-- {
@@ -67,7 +58,6 @@ func (r *RawQuerier[T]) get(ctx context.Context) (*T, error) {
 	}
 	return nil, res.Err
 }
-
 func (r *RawQuerier[T]) getHandler(sess Session) Handler {
 	return func(ctx context.Context, qc *QueryContext) *QueryResult {
 		query, err := qc.Builder.Build()
@@ -102,5 +92,40 @@ func (r *RawQuerier[T]) getHandler(sess Session) Handler {
 			Result: t,
 			Err:    err,
 		}
+	}
+}
+
+func (r *RawQuerier[T]) GetMulti(ctx context.Context) ([]*T, error) {
+	panic("imp")
+}
+
+func (r *RawQuerier[T]) Exec(ctx context.Context) Result {
+	return r.exec(ctx)
+}
+
+func (r *RawQuerier[T]) exec(ctx context.Context) Result {
+	root := r.insertHandler(r.sess)
+	for j := len(r.ms); j >= 0; j-- {
+		root = r.ms[j](root)
+	}
+
+	res := root(ctx, &QueryContext{
+		Type:    QueryTypeInsert,
+		Builder: r,
+	})
+	return res.Result.(Result)
+}
+
+func (r *RawQuerier[T]) insertHandler(sess Session) Handler {
+	return func(ctx context.Context, qc *QueryContext) *QueryResult {
+		q, err := qc.Builder.Build()
+		if err != nil {
+			return &QueryResult{Err: err}
+		}
+		res, err := sess.execContext(ctx, q.SQL, q.Args...)
+		return &QueryResult{Result: Result{
+			err: err,
+			res: res,
+		}}
 	}
 }

@@ -185,6 +185,7 @@ func (s *Selector[T]) buildColumns() error {
 
 // Get 查询单条数据
 func (s *Selector[T]) Get(ctx context.Context) (*T, error) {
+	// 生成 SQL 以及 参数
 	query, err := s.Build()
 	if err != nil {
 		return nil, err

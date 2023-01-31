@@ -17,18 +17,25 @@ type Inserter[T any] struct {
 	onConflict *ConflictKey
 
 	builder
+
+	ms []Middleware
+}
+
+// Use 添加中间件
+func (i *Inserter[T]) Use(ms []Middleware) *Inserter[T] {
+	i.ms = append(i.ms, ms...)
+	return i
 }
 
 func (i *Inserter[T]) Exec(ctx context.Context) Result {
-	q, err := i.Build()
+	// 生成 SQL 以及 参数
+	query, err := i.Build()
 	if err != nil {
 		return Result{err: err}
 	}
-	res, err := i.sess.execContext(ctx, q.SQL, q.Args...)
-	return Result{
-		err: err,
-		res: res,
-	}
+
+	// 委托给 原生查询
+	return RawQuery[T](i.sess, query.SQL, query.Args...).Exec(ctx)
 }
 
 type ConflictKey struct {
@@ -101,11 +108,13 @@ func (i *Inserter[T]) Values(vs ...*T) *Inserter[T] {
 }
 
 func NewInserter[T any](sess Session) *Inserter[T] {
+	core := sess.getCore()
 	return &Inserter[T]{
 		builder: builder{
-			dialect: sess.getCore().Dialect(),
+			dialect: core.Dialect(),
 		},
 		sess: sess,
+		ms:   core.Middlewares(),
 	}
 }
 
