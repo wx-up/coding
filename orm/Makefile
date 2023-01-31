@@ -39,5 +39,6 @@ ut:
 
 .PHONY: check
 check:
+	# $(MAKE) 执行 make 命令
 	@$(MAKE) fmt
 	@$(MAKE) tidy
