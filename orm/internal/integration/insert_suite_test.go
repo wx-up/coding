@@ -10,6 +10,16 @@ import (
 	"testing"
 )
 
+func Test_MYSQL8_Insert(t *testing.T) {
+	// 运行测试套件
+	suite.Run(t, &InsertTestSuit{
+		Suite: Suite{
+			driver: "mysql",
+			dsn:    "root:root@tcp(localhost:13306)/integration_test",
+		},
+	})
+}
+
 type InsertTestSuit struct {
 	Suite
 }
@@ -63,13 +73,4 @@ func (s *InsertTestSuit) TestInsert() {
 func (s *InsertTestSuit) TearDownTest() {
 	res := orm.RawQuery[any](s.db, "TRUNCATE TABLE `simple_structs`;").Exec(context.Background())
 	require.NoError(s.T(), res.Err())
-}
-
-func Test_MYSQL8_Insert(t *testing.T) {
-	suite.Run(t, &InsertTestSuit{
-		Suite: Suite{
-			driver: "mysql",
-			dsn:    "root:root@tcp(localhost:13306)/integration_test",
-		},
-	})
 }
