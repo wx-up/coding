@@ -1,3 +1,5 @@
+//go:build e2e
+
 package integration
 
 import (
@@ -5,6 +7,12 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/wx-up/coding/orm"
 )
+
+// SimpleStruct 测试模型
+type SimpleStruct struct {
+	Id   uint64
+	Name string
+}
 
 type Suite struct {
 	suite.Suite
