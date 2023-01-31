@@ -3,9 +3,12 @@ package orm
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"github.com/wx-up/coding/orm/internal/model"
 	"github.com/wx-up/coding/orm/internal/valuer"
 	"go.uber.org/multierr"
+	"log"
+	"time"
 )
 
 // DB 它其实是 sql.DB 的一个装饰器
@@ -72,6 +75,18 @@ func (db *DB) DoTx(ctx context.Context, opt *sql.TxOptions, task func(ctx contex
 	err = task(ctx, tx)
 	panicked = false
 	return
+}
+
+// Wait 等待数据库连接
+// 注意只能用于测试
+func (db *DB) Wait() error {
+	err := db.db.Ping()
+	for err == driver.ErrBadConn {
+		log.Printf("等待数据库启动...")
+		err = db.db.Ping()
+		time.Sleep(time.Second)
+	}
+	return err
 }
 
 type DBOption func(db *DB)

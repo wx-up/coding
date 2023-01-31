@@ -105,6 +105,7 @@ func NewInserter[T any](sess Session) *Inserter[T] {
 		builder: builder{
 			dialect: sess.getCore().Dialect(),
 		},
+		sess: sess,
 	}
 }
 
