@@ -105,7 +105,7 @@ func (r *RawQuerier[T]) Exec(ctx context.Context) Result {
 
 func (r *RawQuerier[T]) exec(ctx context.Context) Result {
 	root := r.insertHandler(r.sess)
-	for j := len(r.ms); j >= 0; j-- {
+	for j := len(r.ms) - 1; j >= 0; j-- {
 		root = r.ms[j](root)
 	}
 

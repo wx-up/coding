@@ -8,6 +8,6 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
     volumes: # 指定初始化的脚本，可以是目录，也可以是文件，如果是目录的话会按照文件名的顺序依次执行
-      - ./script/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "13306:3306"

@@ -23,6 +23,11 @@ func TestMysql_Insert(t *testing.T) {
 	err = db.Wait()
 	require.NoError(t, err)
 
+	// 结束之后，删除测试数据
+	defer func() {
+		orm.RawQuery[any](db, "TRUNCATE TABLE `simple_structs`;").Exec(context.Background())
+	}()
+
 	testCases := []struct {
 		name            string
 		i               *orm.Inserter[SimpleStruct]

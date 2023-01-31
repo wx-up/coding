@@ -16,6 +16,10 @@ e2e_up:
 e2e_down:
 	docker compose -f script/integrate_test_compose.yml down
 
+.PHONY: e2e_ps
+e2e_ps:
+	docker compose -f script/integrate_test_compose.yml ps
+
 .PHONY: lint
 lint:
 	@golangci-lint run
@@ -34,7 +38,9 @@ tidy:
 .PHONY: ut
 ut:
 	# -race 竞争检测
-	@go test -race ./...
+	# -coverprofile 覆盖率
+	# go tool cover -html=cover.out
+	@go test -race -coverprofile=cover.out -v ./...
 
 
 .PHONY: check
