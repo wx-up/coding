@@ -2,6 +2,7 @@ package orm
 
 import "context"
 
+// Updater 与 upsert 语句中更新部分一样
 type Updater[T any] struct {
 }
 
