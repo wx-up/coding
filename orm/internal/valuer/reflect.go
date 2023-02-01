@@ -2,9 +2,10 @@ package valuer
 
 import (
 	"database/sql"
+	"reflect"
+
 	"github.com/wx-up/coding/orm/internal/errs"
 	"github.com/wx-up/coding/orm/internal/model"
-	"reflect"
 )
 
 type reflectValuer struct {

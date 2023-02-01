@@ -2,8 +2,9 @@ package middleware
 
 import (
 	"context"
-	"github.com/wx-up/coding/orm"
 	"time"
+
+	"github.com/wx-up/coding/orm"
 )
 
 // SlowQueryMiddlewareBuilder slow query log
@@ -34,7 +35,7 @@ func (b *SlowQueryMiddlewareBuilder) Build() orm.Middleware {
 
 			// 当超过阈值的时候，记录日志
 			defer func() {
-				cost := time.Now().Sub(start)
+				cost := time.Since(start)
 				if b.threshold > 0 && cost.Milliseconds() >= b.threshold {
 					b.logFunc(query.SQL, query.Args...)
 				}

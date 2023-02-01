@@ -2,6 +2,7 @@ package orm
 
 import (
 	"context"
+
 	"github.com/wx-up/coding/orm/internal/errs"
 	"github.com/wx-up/coding/orm/internal/model"
 )
@@ -174,7 +175,7 @@ func (i *Inserter[T]) Build() (*Query, error) {
 			if err != nil {
 				return nil, err
 			}
-			//args = append(args, refVal.FieldByName(field.Name).Interface())
+			// args = append(args, refVal.FieldByName(field.Name).Interface())
 			i.addArgs(arg)
 		}
 		i.sb.WriteByte(')')

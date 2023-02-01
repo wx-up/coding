@@ -11,7 +11,7 @@ func Cost(next HandleFunc) HandleFunc {
 	return func(context *Context) {
 		now := time.Now()
 		next(context)
-		fmt.Printf("cost %d \n", time.Now().Sub(now).Milliseconds())
+		fmt.Printf("cost %d \n", time.Since(now).Milliseconds())
 	}
 }
 

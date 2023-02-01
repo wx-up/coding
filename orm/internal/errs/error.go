@@ -27,6 +27,10 @@ func NewErrUnsupportedAssignableType(assignable any) error {
 	return fmt.Errorf("orm: 不支持的赋值语句 %v", assignable)
 }
 
+func NewErrUnsupportedTableReference(tr any) error {
+	return fmt.Errorf("orm：不支持的 table reference %v", tr)
+}
+
 func NewErrUnknownField(name string) error {
 	return fmt.Errorf("orm: 未知字段 %s", name)
 }

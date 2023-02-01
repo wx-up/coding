@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/patrickmn/go-cache"
 	"sync"
 	"time"
+
+	"github.com/patrickmn/go-cache"
 )
 
 // myStore 管理 session 实例
@@ -70,7 +71,7 @@ func (m *myStore) Remove(ctx context.Context, id string) error {
 func (m *myStore) Get(ctx context.Context, id string) (Session, error) {
 	res, ok := m.c.Get(id)
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("session 不存在，id：%s", id))
+		return nil, fmt.Errorf("session 不存在，id：%s", id)
 	}
 	return res.(Session), nil
 }
@@ -98,7 +99,6 @@ func (s *memorySession) Set(ctx context.Context, key string, value string) error
 	defer s.mutex.Unlock()
 	s.data[key] = value
 	return nil
-
 }
 
 func (s *memorySession) ID() string {

@@ -39,10 +39,13 @@ func (c *ConsumerGroup) start() {
 }
 
 func (c *ConsumerGroup) singleHandle() {
-	for {
-		select {
-		case task := <-c.ch:
-			fmt.Println(task)
-		}
+	for task := range c.ch {
+		fmt.Println(task)
 	}
+	//for {
+	//	select {
+	//	case task := <-c.ch:
+	//		fmt.Println(task)
+	//	}
+	//}
 }

@@ -1,0 +1,23 @@
+run:
+  tests: false
+  skip-dirs:
+    - vendor
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - gosimple
+#    - unused
+    - typecheck
+    - staticcheck
+    - ineffassign
+    - bodyclose
+    - govet
+    - funlen
+#    - goimports
+
+linters-settings:
+  funlen:
+    lines: 100
+    statements: -1

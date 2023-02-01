@@ -4,11 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"log"
+	"time"
+
 	"github.com/wx-up/coding/orm/internal/model"
 	"github.com/wx-up/coding/orm/internal/valuer"
 	"go.uber.org/multierr"
-	"log"
-	"time"
 )
 
 // DB 它其实是 sql.DB 的一个装饰器
@@ -39,7 +40,6 @@ func (db *DB) execContext(ctx context.Context, query string, args ...any) (sql.R
 }
 
 func (db *DB) Migrate(ms ...any) {
-
 }
 
 func (db *DB) BeginTx(ctx context.Context, opt *sql.TxOptions) (*Tx, error) {

@@ -2,6 +2,8 @@ package orm
 
 import (
 	"context"
+	"fmt"
+
 	"github.com/wx-up/coding/orm/internal/errs"
 )
 
@@ -9,7 +11,7 @@ type Selector[T any] struct {
 	builder
 
 	// 表名
-	tbl string
+	tbl TableReference
 
 	// WHERE 条件
 	ps []Predicate
@@ -60,7 +62,7 @@ func (s *Selector[T]) Where(ps ...Predicate) *Selector[T] {
 	return s
 }
 
-func (s *Selector[T]) From(tbl string) *Selector[T] {
+func (s *Selector[T]) From(tbl TableReference) *Selector[T] {
 	s.tbl = tbl
 	return s
 }
@@ -102,10 +104,9 @@ func (s *Selector[T]) Build() (*Query, error) {
 	}
 	s.sb.WriteString(" FROM ")
 
-	if s.tbl != "" {
-		s.sb.WriteString(s.tbl)
-	} else {
-		s.quote(s.model.TableName)
+	err = s.buildTable(s.tbl)
+	if err != nil {
+		return nil, err
 	}
 
 	// 拼接 where
@@ -133,6 +134,61 @@ func (s *Selector[T]) Build() (*Query, error) {
 	}, nil
 }
 
+func (s *Selector[T]) buildTable(tbl TableReference) error {
+	switch tr := tbl.(type) {
+	case nil: // 不调用 From 函数
+		s.quote(s.model.TableName)
+	case Table:
+		model, err := s.sess.getCore().R().Get(tr.entry)
+		if err != nil {
+			return err
+		}
+		s.quote(model.TableName)
+	// TableOf(&User{}).Join(TableOf(&User{}).Join(&Order{}))
+	case Join:
+		s.sb.WriteByte('(')
+		err := s.buildTable(tr.left)
+		if err != nil {
+			return err
+		}
+
+		s.sb.WriteByte(' ')
+		s.sb.WriteString(tr.typ)
+		s.sb.WriteByte(' ')
+
+		err = s.buildTable(tr.right)
+		if err != nil {
+			return nil
+		}
+
+		// 处理 ON，逻辑和 where 一样
+		if len(tr.on) > 0 {
+			s.sb.WriteString(" ON ")
+			pre := s.ps[0]
+			for i := 1; i < len(s.ps); i++ {
+				pre = pre.And(s.ps[i])
+			}
+
+			if err = s.buildExpression(pre); err != nil {
+				return err
+			}
+		}
+
+		// 处理 Using
+		if len(tr.using) > 0 {
+			s.sb.WriteString(" USING(")
+			for _, col := range tr.using {
+				_ = col
+			}
+		}
+		s.sb.WriteByte(')')
+	case SubQuery:
+	default:
+		return errs.NewErrUnsupportedTableReference(tbl)
+	}
+	return nil
+}
+
 func (s *Selector[T]) buildColumns() error {
 	if len(s.columns) == 0 {
 		s.sb.WriteString("*")
@@ -144,17 +200,8 @@ func (s *Selector[T]) buildColumns() error {
 		}
 		switch c := col.(type) {
 		case Column: // 列
-			fd, ok := s.model.FieldMap[c.name]
-			if !ok {
-				return errs.NewErrUnknownField(c.name)
-			}
-			s.sb.WriteByte('`')
-			s.sb.WriteString(fd.ColName)
-			s.sb.WriteByte('`')
-			// 如果别名存在，则设置
-			if c.alias != "" {
-				s.sb.WriteString(" AS ")
-				s.sb.WriteString(c.alias)
+			if err := s.buildColumn(c); err != nil {
+				return err
 			}
 		case Aggregate: // 聚合函数
 			fd, ok := s.model.FieldMap[c.arg]
@@ -183,6 +230,62 @@ func (s *Selector[T]) buildColumns() error {
 	return nil
 }
 
+func (s *Selector[T]) buildColumn(c Column) error {
+	// colName = `user`.`id`
+	colName, err := s.column(s.tbl, c)
+	if err != nil {
+		return err
+	}
+
+	s.sb.WriteString(colName)
+
+	// 处理别名
+	if c.alias != "" {
+		s.sb.WriteString(" AS ")
+		s.sb.WriteString(c.alias)
+	}
+	return nil
+}
+
+func (s *Selector[T]) column(tr TableReference, c Column) (string, error) {
+	// 断言 TableReference 类型
+	switch tbl := tr.(type) {
+	case nil:
+		fd, ok := s.model.FieldMap[c.name]
+		if !ok {
+			return "", errs.NewErrUnknownField(c.name)
+		}
+
+		// 添加表名前缀，当 join 查询时，字段存在在多张表时，没有表名限定的话，会出错
+		s.quote(s.model.TableName)
+		s.sb.WriteByte('.')
+
+		return fmt.Sprintf("`%s`.`%s`", s.model.TableName, fd.ColName), nil
+
+	case Table:
+		model, err := s.sess.getCore().R().Get(tbl.entry)
+		if err != nil {
+			return "", err
+		}
+		fd, ok := model.FieldMap[c.name]
+		if !ok {
+			return "", errs.NewErrUnknownField(c.name)
+		}
+		return fmt.Sprintf("`%s`.`%s`", model.TableName, fd.ColName), nil
+
+	case Join:
+		// 递归处理
+		colName, err := s.column(tbl.left, c)
+		if err == nil {
+			return colName, nil
+		}
+		// 如果左边不在，那就找右边
+		return s.column(tbl.right, c)
+	default:
+		return "", errs.NewErrUnsupportedTableReference(s.tbl)
+	}
+}
+
 // Get 查询单条数据
 func (s *Selector[T]) Get(ctx context.Context) (*T, error) {
 	// 生成 SQL 以及 参数
@@ -196,7 +299,7 @@ func (s *Selector[T]) Get(ctx context.Context) (*T, error) {
 }
 
 func (s *Selector[T]) GetMulti(ctx context.Context) ([]*T, error) {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }
 

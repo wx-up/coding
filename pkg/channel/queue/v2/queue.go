@@ -37,14 +37,13 @@ func NewConsumerGroup(name string, maxCount int64) *ConsumerGroup {
 }
 
 func (c *ConsumerGroup) consume(message string) {
+	c.ch <- message
+
 	select {
-	case c.ch <- message:
-		select {
-		case c.maxGo <- struct{}{}:
-			fmt.Println("启动一个 goroutine")
-			go c.singleHande()
-		default: // 不阻塞
-		}
+	case c.maxGo <- struct{}{}:
+		fmt.Println("启动一个 goroutine")
+		go c.singleHande()
+	default: // 不阻塞
 	}
 }
 

@@ -9,7 +9,6 @@ func Apply[T any](t *T, opts ...GenericOption[T]) {
 }
 
 type Dog struct {
-	name  string
 	hobby string
 }
 

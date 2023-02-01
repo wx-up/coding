@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -241,7 +240,7 @@ func (sr *StaticResource) readFile(path string) (*fileCacheItem, error) {
 		return nil, err
 	}
 	// 读取文件数据
-	data, err := ioutil.ReadAll(f)
+	data, err := io.ReadAll(f)
 	if err != nil {
 		return nil, err
 	}

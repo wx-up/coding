@@ -35,7 +35,7 @@ func (c *Client) Send(msg string) (string, error) {
 	}
 
 	// 读取响应：读取内容长度
-	lenBs := make([]byte, lenContent, lenContent)
+	lenBs := make([]byte, lenContent)
 	_, err = conn.Read(lenBs)
 	if err != nil {
 		return "", err

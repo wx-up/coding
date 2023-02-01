@@ -2,10 +2,12 @@ package valuer
 
 import (
 	"database/sql"
-	"github.com/wx-up/coding/orm/internal/errs"
-	"github.com/wx-up/coding/orm/internal/model"
 	"reflect"
 	"unsafe"
+
+	"github.com/wx-up/coding/orm/internal/errs"
+
+	"github.com/wx-up/coding/orm/internal/model"
 )
 
 type unsafeValuer struct {

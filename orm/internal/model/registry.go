@@ -1,12 +1,13 @@
 package model
 
 import (
-	"github.com/gertd/go-pluralize"
-	"github.com/iancoleman/strcase"
-	"github.com/wx-up/coding/orm/internal/errs"
 	"reflect"
 	"strings"
 	"sync"
+
+	"github.com/gertd/go-pluralize"
+	"github.com/iancoleman/strcase"
+	"github.com/wx-up/coding/orm/internal/errs"
 )
 
 // RegistryInterface 编程注册的方式实现自定义，通过 ModelOpt 来实现自定义
@@ -78,7 +79,7 @@ func (r *Registry) parseModel(val any) (*Model, error) {
 	fieldCnt := typ.NumField()
 	fieldMap := make(map[string]*Field, fieldCnt)
 	columnMap := make(map[string]*Field, fieldCnt)
-	var columns = make([]*Field, 0, fieldCnt)
+	columns := make([]*Field, 0, fieldCnt)
 	for i := 0; i < fieldCnt; i++ {
 		f := typ.Field(i)
 		ormTagValues := parseTag(f.Tag)

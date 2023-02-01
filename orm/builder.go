@@ -1,8 +1,9 @@
 package orm
 
 import (
-	"github.com/wx-up/coding/orm/internal/model"
 	"strings"
+
+	"github.com/wx-up/coding/orm/internal/model"
 )
 
 type builder struct {

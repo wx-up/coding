@@ -39,8 +39,6 @@ func StoreCacheToDBCallback(ctx context.Context) {
 	case <-ctx.Done():
 		log.Printf("刷新到DB超时")
 	}
-
-	return
 }
 
 type App struct {
