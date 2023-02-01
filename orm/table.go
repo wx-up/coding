@@ -4,6 +4,12 @@ type TableReference interface {
 	tableAlias() string
 }
 
+type TableText string
+
+func (TableText) tableAlias() string {
+	return ""
+}
+
 // Table 普通表
 type Table struct {
 	entry any
@@ -104,10 +110,9 @@ func (jb *JoinBuilder) Using(cols ...string) Join {
 }
 
 // SubQuery 子查询
-type SubQuery struct {
-}
+type SubQuery struct{}
 
 func (s SubQuery) tableAlias() string {
-	//TODO implement me
+	// TODO implement me
 	panic("implement me")
 }

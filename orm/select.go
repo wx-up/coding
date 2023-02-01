@@ -136,6 +136,8 @@ func (s *Selector[T]) Build() (*Query, error) {
 
 func (s *Selector[T]) buildTable(tbl TableReference) error {
 	switch tr := tbl.(type) {
+	case TableText:
+		s.sb.WriteString(string(tr))
 	case nil: // 不调用 From 函数
 		s.quote(s.model.TableName)
 	case Table:
@@ -177,8 +179,13 @@ func (s *Selector[T]) buildTable(tbl TableReference) error {
 		// 处理 Using
 		if len(tr.using) > 0 {
 			s.sb.WriteString(" USING(")
-			for _, col := range tr.using {
-				_ = col
+			for i, col := range tr.using {
+				if i > 0 {
+					s.sb.WriteByte(',')
+				}
+				if err = s.buildColumn(Column{name: col}); err != nil {
+					return err
+				}
 			}
 		}
 		s.sb.WriteByte(')')

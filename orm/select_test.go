@@ -5,13 +5,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"testing"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/wx-up/coding/orm/internal/errs"
 	"github.com/wx-up/coding/orm/internal/valuer"
-	"testing"
 )
 
 type TestModel struct {
@@ -43,7 +44,7 @@ func TestSelect_Build(t *testing.T) {
 	}{
 		{
 			name:    "from",
-			builder: NewSelector[TestModel](db).From("test_model_tbl"),
+			builder: NewSelector[TestModel](db).From(TableText("test_model_tbl")),
 			want: &Query{
 				SQL: "SELECT * FROM test_model_tbl;",
 			},
@@ -51,7 +52,7 @@ func TestSelect_Build(t *testing.T) {
 		},
 		{
 			name:    "from with quotation mark", // 反引号
-			builder: NewSelector[TestModel](db).From("`test_model_tbl`"),
+			builder: NewSelector[TestModel](db).From(TableText("`test_model_tbl`")),
 			want: &Query{
 				SQL: "SELECT * FROM `test_model_tbl`;",
 			},
@@ -67,15 +68,15 @@ func TestSelect_Build(t *testing.T) {
 		},
 		{
 			name:    "from but empty",
-			builder: NewSelector[TestModel](db).From(""),
+			builder: NewSelector[TestModel](db).From(TableText("")),
 			want: &Query{
-				SQL: "SELECT * FROM `test_models`;",
+				SQL: "SELECT * FROM ;",
 			},
 			wantErr: nil,
 		},
 		{
 			name:    "from with db",
-			builder: NewSelector[TestModel](db).From("byn.test_model"),
+			builder: NewSelector[TestModel](db).From(TableText("byn.test_model")),
 			want: &Query{
 				SQL: "SELECT * FROM byn.test_model;",
 			},
@@ -222,7 +223,6 @@ func TestSelector_Get(t *testing.T) {
 			}
 			assert.Equal(t, tt.wantVal, res)
 		})
-
 	}
 }
 
@@ -310,7 +310,6 @@ func BenchmarkQuerier(b *testing.B) {
 
 	res, err := db.db.Exec("INSERT INTO `test_models`(`id`,`first_name`,`age`,`last_name`)"+
 		"VALUES (?,?,?,?)", 12, "Wei", 18, "Xin")
-
 	if err != nil {
 		b.Fatal(err)
 	}
