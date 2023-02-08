@@ -1,5 +1,16 @@
 .DEFAULT_GOAL := help
 
+cmd := $(MAKECMDGOALS)
+
+.PHONY: controller
+controller:
+ifeq ($(cmd),controller)
+	@go run main.go make $(cmd) -h
+else
+	@go run main.go make $(cmd)
+endif
+
+
 .PHONY: help
 help:
 	@echo "请指定目标，可用目标：e2e、e2e_up、e2e_down、lint、fmt、tidy、ut、check"
