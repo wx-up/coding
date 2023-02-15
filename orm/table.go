@@ -35,6 +35,16 @@ func (t Table) As(alias string) Table {
 	}
 }
 
+// C TableOf(User{}).C("Id") ==》 表示 users.id
+// 使用场景之一：当 join 查询时，字段存在在多张表时，没有表名限定的话，会出错
+// 解决不同表有同名列导致列名冲突的问题
+func (t Table) C(col string) Column {
+	return Column{
+		name: col,
+		tbl:  t,
+	}
+}
+
 // Join 返回 builder（ 建造者模式往往是链式调用，返回值往往是指针类型 ）
 func (t Table) Join(right TableReference) *JoinBuilder {
 	return &JoinBuilder{

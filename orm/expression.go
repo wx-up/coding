@@ -6,6 +6,17 @@ type expression interface {
 	expr()
 }
 
+func exprOf(arg any) expression {
+	switch v := arg.(type) {
+	case expression:
+		return v
+	default:
+		return Val{
+			val: arg,
+		}
+	}
+}
+
 type RawExpr struct {
 	raw  string
 	args []any

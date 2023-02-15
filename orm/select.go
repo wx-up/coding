@@ -166,9 +166,9 @@ func (s *Selector[T]) buildTable(tbl TableReference) error {
 		// 处理 ON，逻辑和 where 一样
 		if len(tr.on) > 0 {
 			s.sb.WriteString(" ON ")
-			pre := s.ps[0]
-			for i := 1; i < len(s.ps); i++ {
-				pre = pre.And(s.ps[i])
+			pre := tr.on[0]
+			for i := 1; i < len(tr.on); i++ {
+				pre = pre.And(tr.on[i])
 			}
 
 			if err = s.buildExpression(pre); err != nil {
@@ -238,10 +238,19 @@ func (s *Selector[T]) buildColumns() error {
 }
 
 func (s *Selector[T]) buildColumn(c Column) error {
-	// colName = `user`.`id`
-	colName, err := s.column(s.tbl, c)
+	tbl := s.tbl
+	if c.tbl != nil {
+		tbl = c.tbl
+	}
+	colName, err := s.column(tbl, c)
 	if err != nil {
 		return err
+	}
+
+	// 处理表的别名
+	if tbl != nil && tbl.tableAlias() != "" {
+		s.quote(tbl.tableAlias())
+		s.sb.WriteByte('.')
 	}
 
 	s.sb.WriteString(colName)
@@ -263,11 +272,10 @@ func (s *Selector[T]) column(tr TableReference, c Column) (string, error) {
 			return "", errs.NewErrUnknownField(c.name)
 		}
 
-		// 添加表名前缀，当 join 查询时，字段存在在多张表时，没有表名限定的话，会出错
 		s.quote(s.model.TableName)
 		s.sb.WriteByte('.')
 
-		return fmt.Sprintf("`%s`.`%s`", s.model.TableName, fd.ColName), nil
+		return fmt.Sprintf("`%s`", fd.ColName), nil
 
 	case Table:
 		model, err := s.sess.getCore().R().Get(tbl.entry)
@@ -278,10 +286,10 @@ func (s *Selector[T]) column(tr TableReference, c Column) (string, error) {
 		if !ok {
 			return "", errs.NewErrUnknownField(c.name)
 		}
-		return fmt.Sprintf("`%s`.`%s`", model.TableName, fd.ColName), nil
+		return fmt.Sprintf("`%s`", fd.ColName), nil
 
 	case Join:
-		// 递归处理
+		// 递归检查，column 是否合法
 		colName, err := s.column(tbl.left, c)
 		if err == nil {
 			return colName, nil

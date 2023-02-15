@@ -19,6 +19,7 @@ func (p op) String() string {
 }
 
 type Column struct {
+	tbl   TableReference
 	name  string
 	alias string
 }
@@ -47,10 +48,9 @@ func (c Column) selectable() {}
 
 func (c Column) Eq(val any) Predicate {
 	return Predicate{
-		left: c,
-		op:   opEq,
-		// 使用 Val 结构体包装一下，让它实现 expression 接口
-		right: Val{val: val},
+		left:  c,
+		op:    opEq,
+		right: exprOf(val),
 	}
 }
 
@@ -58,7 +58,7 @@ func (c Column) Gt(val any) Predicate {
 	return Predicate{
 		left:  c,
 		op:    opGt,
-		right: Val{val: val},
+		right: exprOf(val),
 	}
 }
 
@@ -66,7 +66,7 @@ func (c Column) Gte(val any) Predicate {
 	return Predicate{
 		left:  c,
 		op:    opGte,
-		right: Val{val: val},
+		right: exprOf(val),
 	}
 }
 
@@ -74,7 +74,7 @@ func (c Column) Lt(val any) Predicate {
 	return Predicate{
 		left:  c,
 		op:    opLt,
-		right: Val{val: val},
+		right: exprOf(val),
 	}
 }
 
@@ -82,7 +82,7 @@ func (c Column) Lte(val any) Predicate {
 	return Predicate{
 		left:  c,
 		op:    opLte,
-		right: Val{val: val},
+		right: exprOf(val),
 	}
 }
 
@@ -122,7 +122,6 @@ type Val struct {
 }
 
 func (v Val) expr() {
-
 }
 
 type OrderBy struct {
