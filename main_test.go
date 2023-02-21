@@ -1,14 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"testing"
 )
 
 func Test(t *testing.T) {
-	s := make([]int, 10)
-	fmt.Println(len(s))
-	fmt.Println(cap(s))
+	ch := make(chan struct{}, 1)
+	close(ch)
+	close(ch)
 }
 
 func Add(a, b int) int {
