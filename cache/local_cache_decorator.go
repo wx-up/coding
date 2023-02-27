@@ -39,6 +39,7 @@ func NewLocalCacheMaxCnt(localCache *LocalCache) *LocalCacheMaxCnt {
 	return res
 }
 
+// Set TODO：重复设置某一个 key 的时候， cnt 不应该增加
 func (c *LocalCacheMaxCnt) Set(ctx context.Context, key string, val any, expiration time.Duration) error {
 	// 先占一个位置
 	cnt := atomic.AddInt32(&c.cnt, 1)
