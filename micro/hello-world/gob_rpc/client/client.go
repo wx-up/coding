@@ -16,11 +16,17 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	var reply string
-	err = client.Call("HelloService.Hello", "world", &reply)
+	var reply struct {
+		Age int64
+	}
+	err = client.Call("HelloService.Test", struct {
+		Name string
+	}{
+		Name: "星期三",
+	}, &reply)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(reply)
+	fmt.Println(reply.Age)
 }

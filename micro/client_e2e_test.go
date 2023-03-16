@@ -4,6 +4,7 @@ package micro
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"testing"
 
@@ -19,4 +20,12 @@ func TestNewClient(t *testing.T) {
 	resp, err := srv.GetById(context.Background(), &GetByIdReq{Id: 10})
 	require.NoError(t, err)
 	log.Println(resp)
+}
+
+func Test(t *testing.T) {
+	var s []string
+	fmt.Println(s)
+
+	fmt.Println(s == nil)
+	fmt.Println(len(s))
 }
