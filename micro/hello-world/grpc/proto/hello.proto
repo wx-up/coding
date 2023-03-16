@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option go_package = "./proto;proto";
+
+message HelloRequest {
+  string name = 1; // 1 是编号，不是值
+  int32 age = 2;
+  repeated string courses = 3; // repeated 表示切片
+}
+
+message HelloResponse {
+  string replay = 1;
+}
+
+
+service HelloService {
+  rpc Hello(HelloRequest) returns (HelloResponse);
+}
+
+
+
+
