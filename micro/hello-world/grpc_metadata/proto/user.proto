@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+
+option go_package = "./proto;proto";
+
+service User {
+  rpc Say(SayReq) returns (SayResp);
+}
+
+
+message SayReq {
+  string name = 1;
+}
+
+message SayResp {
+  bool ok = 1;
+}

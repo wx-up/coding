@@ -2,13 +2,22 @@ syntax = "proto3";
 
 option go_package = "./proto;proto";
 
+//import "google/protobuf/empty.proto";
+
+import "google/protobuf/timestamp.proto";
+
 service Hello {
   //  这种定义方式也是可以的：rpc Say(HelloReq) returns ( stream HelloResp ){}
   rpc GetStream(HelloReq) returns ( stream HelloResp ); // 服务端流模式
   rpc PutStream(stream HelloReq) returns ( HelloResp ); // 客户端流模式
   rpc AllStream(stream HelloReq) returns ( stream HelloResp ); // 双向流模式
+
+//  rpc Ping(google.protobuf.Empty) returns ( Pong );
 }
 
+message Pong {
+  string id = 1;
+}
 
 message HelloReq {
   string data = 1;
@@ -16,4 +25,28 @@ message HelloReq {
 
 message HelloResp {
   string data = 1;
+}
+
+
+enum Gender {
+  Male = 0;
+  Female = 1;
+}
+
+
+message Dog {
+  string name = 1;
+
+  message Hobby {
+    string hobby = 1;
+  }
+
+  repeated Hobby hobbies = 2;
+
+  Gender gender = 3;
+
+  map<string,string> mp = 4;
+
+google.protobuf.Timestamp timestamp = 5;
+
 }

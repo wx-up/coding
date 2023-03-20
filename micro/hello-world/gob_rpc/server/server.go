@@ -8,9 +8,9 @@ import (
 
 type HelloService struct{}
 
-// Hello go 中的 rpc 方法规定：
+// Hello go 自带 rpc 规定：
 //
-//	只能有两个可序列化的参数，其中第二个参数是指针类型，并且返回一个error类型，同时必须是公开的方法
+//	方法只能有两个可序列化的参数，其中第二个参数是指针类型，并且返回一个error类型，同时必须是公开的方法
 func (s *HelloService) Hello(request string, reply *string) error {
 	*reply = "hello, " + request
 	return nil
