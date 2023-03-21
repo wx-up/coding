@@ -36,6 +36,7 @@ func main() {
 
 	// 一元拦截器
 	interceptorOpt := grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+		// meta, ok := metadata.FromIncomingContext(ctx)
 		return handler(ctx, req)
 	})
 	srv := grpc.NewServer(interceptorOpt)

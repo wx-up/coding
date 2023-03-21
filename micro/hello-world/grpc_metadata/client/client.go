@@ -14,8 +14,23 @@ import (
 
 type UserClient struct{}
 
+type ClientCredential struct{}
+
+func (c *ClientCredential) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+	return map[string]string{
+		"token": "123",
+	}, nil
+}
+
+func (c *ClientCredential) RequireTransportSecurity() bool {
+	return false
+}
+
 func main() {
-	client, err := grpc.Dial("localhost:8081", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	client, err := grpc.Dial("localhost:8081",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithPerRPCCredentials(&ClientCredential{}),
+	)
 	if err != nil {
 		fmt.Println(err)
 		return
