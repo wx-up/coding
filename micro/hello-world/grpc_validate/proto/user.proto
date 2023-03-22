@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+import "validate.proto";
+
+option go_package = "./;proto";
+
+
+
+message User {
+  uint64 id = 1 [(validate.rules).uint64.gt = 999];
+}

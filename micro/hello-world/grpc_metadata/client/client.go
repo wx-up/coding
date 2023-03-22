@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"google.golang.org/grpc/status"
 
 	"google.golang.org/grpc/metadata"
 
@@ -48,11 +51,18 @@ func main() {
 	})
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
+	// 设置超时
+	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
+	defer cancel()
+
 	resp, err := proto.NewUserClient(client).Say(ctx, &proto.SayReq{
 		Name: "哈哈哈",
 	})
 	if err != nil {
-		fmt.Println(err)
+		st, ok := status.FromError(err)
+		if ok {
+			fmt.Println(st.Message(), st.Code())
+		}
 		return
 	}
 
