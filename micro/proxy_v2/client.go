@@ -2,7 +2,6 @@ package proxy_v2
 
 import (
 	"context"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"net"
@@ -102,8 +101,6 @@ func NewClient(addr string) *Client {
 	}
 }
 
-const numOfLengthBytes = 8
-
 func (c *Client) Invoke(ctx context.Context, req *Request) (*Response, error) {
 	// 这里先使用 json
 	data, err := json.Marshal(req)
@@ -131,27 +128,10 @@ func (c *Client) SendData(bs []byte) ([]byte, error) {
 		}()
 	}
 
-	contentBs := make([]byte, numOfLengthBytes, numOfLengthBytes+len(bs))
-	binary.BigEndian.PutUint64(contentBs, uint64(len(bs)))
-	contentBs = append(contentBs, bs...)
-	_, err = conn.Write(contentBs)
+	_, err = conn.Write(EncodeData(bs))
 	if err != nil {
 		return nil, err
 	}
 
-	// 读取响应：读取内容长度
-	lenBs := make([]byte, numOfLengthBytes)
-	_, err = conn.Read(lenBs)
-	if err != nil {
-		return nil, err
-	}
-	contentLen := binary.BigEndian.Uint64(lenBs)
-
-	// 读取响应：读取内容
-	contentBs = make([]byte, contentLen)
-	_, err = conn.Read(contentBs)
-	if err != nil {
-		return nil, err
-	}
-	return contentBs, nil
+	return Read(conn)
 }
