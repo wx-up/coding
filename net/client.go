@@ -27,7 +27,7 @@ func (c *Client) Send(msg string) (string, error) {
 
 	// 发送数据
 	bs := make([]byte, lenContent, lenContent+len(msg))
-	binary.BigEndian.PutUint64(bs, uint64(lenContent))
+	binary.BigEndian.PutUint64(bs, uint64(len(msg)))
 	bs = append(bs, msg...)
 	_, err = conn.Write(bs)
 	if err != nil {

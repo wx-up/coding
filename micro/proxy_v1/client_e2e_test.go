@@ -1,6 +1,6 @@
 //go:build e2e
 
-package micro
+package proxy_v1
 
 import (
 	"context"

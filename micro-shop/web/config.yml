@@ -1,0 +1,9 @@
+name: "web"
+env: dev
+mysql:
+  host: "127.0.0.1"
+  port: 3306
+
+jwt:
+  secret: "123456"
+  expire_time: 7200

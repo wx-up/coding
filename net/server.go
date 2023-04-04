@@ -19,6 +19,7 @@ func NewServer(addr string) *Server {
 func (s *Server) Listen() error {
 	listener, err := net.Listen("tcp", s.addr)
 	if err != nil {
+		// 常见的错误就是 端口被占用
 		return err
 	}
 	for {
@@ -38,7 +39,7 @@ func (s *Server) Listen() error {
 
 func (s *Server) handleConn(conn net.Conn) error {
 	for {
-		// 读数据长度
+		// lenContent = 8 表示用八个字节来表示内容的长度
 		bs := make([]byte, lenContent)
 		_, err := conn.Read(bs)
 		if err != nil {
@@ -56,6 +57,12 @@ func (s *Server) handleConn(conn net.Conn) error {
 		// 写入消息长度
 		binary.BigEndian.PutUint64(bs, uint64(len(res)))
 		bs = append(bs, res...)
+
+		// 下面这种方式也是可以的
+		// bs = make([]byte, lenContent+len(res))
+		// binary.BigEndian.PutUint64(bs, uint64(len(res)))
+		// copy(bs[lenContent:], res)
+
 		_, err = conn.Write(bs)
 		if err != nil {
 			return err
