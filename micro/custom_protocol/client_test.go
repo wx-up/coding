@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/wx-up/coding/micro/custom_protocol/message"
+
 	"github.com/golang/mock/gomock"
 
 	"github.com/stretchr/testify/require"
@@ -48,11 +50,10 @@ func Test_setFuncField(t *testing.T) {
 			mock: func() Proxy {
 				res := NewMockProxy(ctrl)
 				// 期望调用 Invoke 方法时，第一个参数值是任意的不限制，第二个参数值必须是下面指定的
-				res.EXPECT().Invoke(gomock.Any(), &Request{
+				res.EXPECT().Invoke(gomock.Any(), &message.Request{
 					ServiceName: "user-service",
 					MethodName:  "GetById",
-					Arg:         []byte(""),
-				}).Return(&Response{}, nil)
+				}).Return(&message.Response{}, nil)
 				return res
 			},
 		},

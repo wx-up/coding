@@ -54,8 +54,8 @@ func TestResponseEncodeDecode(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			tc.Resp.calculateBodyLength()
-			tc.Resp.calculateHeaderLength()
+			tc.Resp.CalculateBodyLength()
+			tc.Resp.CalculateHeaderLength()
 			data := EncodeResp(tc.Resp)
 			res := DecodeResp(data)
 			assert.Equal(t, tc.Resp, res)

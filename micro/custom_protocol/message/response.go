@@ -62,10 +62,10 @@ func DecodeResp(data []byte) *Response {
 	return resp
 }
 
-func (r *Response) calculateHeaderLength() {
+func (r *Response) CalculateHeaderLength() {
 	r.HeaderLength = 4 + 4 + 4 + 1 + 1 + 1 + uint32(len(r.Error))
 }
 
-func (r *Response) calculateBodyLength() {
+func (r *Response) CalculateBodyLength() {
 	r.BodyLength = uint32(len(r.Data))
 }

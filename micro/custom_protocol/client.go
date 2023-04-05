@@ -59,6 +59,8 @@ func setFuncField(service Service, p Proxy) error {
 				MethodName:  fieldTyp.Name,
 				Data:        reqData,
 			}
+			req.CalculateBodyLength()
+			req.CalculateHeaderLength()
 
 			retVal := reflect.New(fieldTyp.Type.Out(0).Elem())
 
@@ -72,13 +74,20 @@ func setFuncField(service Service, p Proxy) error {
 				}
 			}
 
+			// 处理业务错误
+			if len(resp.Error) > 0 {
+				return []reflect.Value{retVal, reflect.ValueOf(errors.New(string(resp.Error)))}
+			}
+
 			// 将结果反序列化
-			err = json.Unmarshal(resp.Data, retVal.Interface())
-			if err != nil {
-				return []reflect.Value{
-					// 第一个返回值的类型：fieldTyp.Type.Out(0)
-					retVal,
-					reflect.ValueOf(err),
+			if len(resp.Data) > 0 {
+				err = json.Unmarshal(resp.Data, retVal.Interface())
+				if err != nil {
+					return []reflect.Value{
+						// 第一个返回值的类型：fieldTyp.Type.Out(0)
+						retVal,
+						reflect.ValueOf(err),
+					}
 				}
 			}
 
@@ -104,16 +113,12 @@ func NewClient(addr string) *Client {
 }
 
 func (c *Client) Invoke(ctx context.Context, req *message.Request) (*message.Response, error) {
-	// 这里先使用 json
-	data, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
+	data := message.EncodeReq(req)
 	resp, err := c.SendData(data)
 	if err != nil {
 		return nil, err
 	}
-	return &message.Response{Data: resp}, err
+	return message.DecodeResp(resp), nil
 }
 
 // SendData 发送数据
@@ -130,7 +135,7 @@ func (c *Client) SendData(bs []byte) ([]byte, error) {
 		}()
 	}
 
-	_, err = conn.Write(EncodeData(bs))
+	_, err = conn.Write(bs)
 	if err != nil {
 		return nil, err
 	}

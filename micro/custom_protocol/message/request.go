@@ -23,7 +23,7 @@ type Request struct {
 	Data []byte
 }
 
-func (req *Request) calculateHeaderLength() {
+func (req *Request) CalculateHeaderLength() {
 	// 长度 1 表示分隔符
 	headerLength := 15 + uint32(len(req.ServiceName)) + 1 + uint32(len(req.MethodName)) + 1
 
@@ -37,7 +37,7 @@ func (req *Request) calculateHeaderLength() {
 	req.HeaderLength = headerLength
 }
 
-func (req *Request) calculateBodyLength() {
+func (req *Request) CalculateBodyLength() {
 	req.BodyLength = uint32(len(req.Data))
 }
 

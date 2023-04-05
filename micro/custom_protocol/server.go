@@ -7,6 +7,8 @@ import (
 	"log"
 	"net"
 	"reflect"
+
+	"github.com/wx-up/coding/micro/custom_protocol/message"
 )
 
 type Server struct {
@@ -45,7 +47,6 @@ func (s *Server) Start(addr string) error {
 		// 每一个 conn 由一个 goroutine 去处理
 		go func() {
 			if err := s.handleConn(conn); err != nil {
-				log.Println(err)
 				_ = conn.Close()
 			}
 		}()
@@ -58,33 +59,41 @@ func (s *Server) handleConn(conn net.Conn) error {
 		if err != nil {
 			return err
 		}
-		data, err := s.handleMsg(reqMsg)
+		resp, err := s.Invoke(context.Background(), message.DecodeReq(reqMsg))
 		if err != nil {
-			// err 可能是业务错误，需要考虑返回给客户端
+			// 反射调用函数出现问题，将这个错误返回给调用方
+			resp.Error = []byte(err.Error())
 		}
+		resp.CalculateBodyLength()
+		resp.CalculateHeaderLength()
 
-		_, err = conn.Write(EncodeData(data))
+		_, err = conn.Write(message.EncodeResp(resp))
 		if err != nil {
 			return err
 		}
 	}
 }
 
-func (s *Server) handleMsg(data []byte) (res []byte, err error) {
-	// 解码
-	req := &Request{}
-	err = json.Unmarshal(data, req)
-	if err != nil {
-		return
-	}
-
+func (s *Server) Invoke(ctx context.Context, req *message.Request) (*message.Response, error) {
 	stub, ok := s.services[req.ServiceName]
 	if !ok {
 		return nil, errors.New("你要调用的服务不存在")
 	}
 
+	resp := &message.Response{
+		RequestID:  req.RequestID,
+		Version:    req.Version,
+		Compress:   req.Compress,
+		Serializer: req.Serializer,
+	}
+
 	// 反射发起调用
-	return stub.invoke(context.Background(), req.MethodName, req.Arg)
+	respData, err := stub.invoke(context.Background(), req.MethodName, req.Data)
+	if err != nil {
+		return resp, err
+	}
+	resp.Data = respData
+	return resp, nil
 }
 
 // reflectionStub 反射的桩，后续可以考虑用 unsafe 优化

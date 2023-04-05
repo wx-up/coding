@@ -18,16 +18,3 @@ type GetByIdReq struct {
 type GetByIdResp struct {
 	Msg string
 }
-
-// UserServiceServer 服务端
-type UserServiceServer struct{}
-
-func (u *UserServiceServer) Name() string {
-	return "user-service"
-}
-
-func (u *UserServiceServer) GetById(ctx context.Context, req *GetByIdReq) (*GetByIdResp, error) {
-	return &GetByIdResp{
-		Msg: "我收到了",
-	}, nil
-}
