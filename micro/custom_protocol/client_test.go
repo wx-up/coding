@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/wx-up/coding/micro/custom_protocol/serialize/json"
+
 	"github.com/wx-up/coding/micro/custom_protocol/message"
 
 	"github.com/golang/mock/gomock"
@@ -61,7 +63,7 @@ func Test_setFuncField(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := setFuncField(tc.service, tc.mock())
+			err := setFuncField(tc.service, tc.mock(), json.New())
 			assert.Equal(t, tc.wantErr, err)
 			if err != nil {
 				return

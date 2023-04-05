@@ -45,7 +45,7 @@ func Test(t *testing.T) {
 
 	// 这里是客户端的 Service 不需要实现 GetById 通过反射篡改成 RPC 调用
 	usrClient := &UserService{}
-	err := InitClientProxy(":8088", usrClient)
+	err := NewClient(":8088").InitService(usrClient)
 	assert.Equal(t, nil, err)
 	if err != nil {
 		return
